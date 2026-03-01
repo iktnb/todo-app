@@ -1,0 +1,21 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare, build and deploy
+        uses: iktnb/github-utils/.github/actions/prepare-and-build-for-gh-pages@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          site_url: ${{ vars.SITE_URL }}
+          output_path: "dist"
+          build-command: "npm run build"

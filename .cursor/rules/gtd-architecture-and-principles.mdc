@@ -1,0 +1,61 @@
+---
+description: GTD MVP architecture and engineering principles
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# GTD Architecture and Principles
+
+## Architecture Direction
+
+- Use feature-first structure for new MVP areas: `src/features/capture`, `src/features/clarify`, `src/features/engage`, `src/features/projects`, `src/features/review`.
+- Keep domain types centralized in `src/types/gtd.ts`; avoid duplicating entity shapes in feature folders.
+- Treat `src/hooks/useBoardState.ts` as temporary orchestration only; extract pure selectors/transitions to reusable helpers when logic grows.
+- Persist user data locally first (versioned snapshot + migration-safe loading), then evolve adapters if needed.
+
+## GTD Domain Invariants (Must Hold)
+
+- `Item` is raw capture only: at capture time it contains only raw fields (`id`, `title`, `notes`, `createdAt`, `source`, `clarified`).
+- Clarify is mandatory before execution: raw inbox lists only `clarified === false`.
+- Clarify outcomes for MVP are only: `next_action`, `project`, `someday`, `trash`.
+- Every active `Project` must have at least one active `NextAction`.
+- Engage views show actionable work by real constraints (context first), not by artificial priority.
+
+## State and Data Rules
+
+- Prefer explicit transition functions over ad-hoc object mutation.
+- Add storage version bumps for breaking shape changes and provide fallback for invalid or stale snapshots.
+- Keep derived data in selectors (`inboxItems`, `visibleNextActions`, `projectsWithoutNextAction`) rather than storing duplicates in state.
+- Use stable IDs and timestamps for all GTD entities; never regenerate IDs during migration.
+- Keep shared type system split by kind:
+  - `src/types/interfaces/` for interfaces
+  - `src/types/enums/` for enum-like unions
+  - `src/types/types/` for composite type aliases
+- Keep `src/types/board.ts`, `src/types/gtd.ts`, `src/types/storage.ts` as compatibility/barrel layers only.
+
+## UI and Composition Rules
+
+- UI should reduce thinking friction and push completion, not over-organization.
+- Do not build reusable UI primitives inside `src/`; use `design-system` components for reusable widgets.
+- For one-off feature UI, colocate presentational components inside the feature folder.
+- Clarify and Weekly Review flows must be keyboard-usable and explicit about next required action.
+
+## Implementation Principles
+
+- Build in thin vertical slices: `data -> state -> ui -> validation -> manual-test`.
+- Keep old behavior working during migration; avoid big-bang rewrites.
+- Prefer small, reversible changes and explicit guards for invalid transitions.
+
+## Examples
+
+```typescript
+// ✅ Good: transition is explicit and validates invariant.
+if (project.status === 'active' && projectNextActions.length === 0) {
+  throw new Error('Active project requires at least one next action')
+}
+```
+
+```typescript
+// ❌ Bad: silently mutates status without checking GTD rules.
+project.status = 'active'
+```

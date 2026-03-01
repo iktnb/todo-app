@@ -1,0 +1,38 @@
+---
+description: Keep TypeScript types and interfaces in separate files
+alwaysApply: true
+---
+
+# Type Separation Policy
+
+- Always move shared TypeScript `type` and `interface` declarations to `src/types/`.
+- Keep declarations split by kind:
+  - `src/types/interfaces/` for interfaces
+  - `src/types/enums/` for enum-like unions
+  - `src/types/types/` for composite aliases
+- One model declaration per file. File name must match the model purpose (for example `project.ts`, `next-action.ts`).
+- Do not define reusable domain types inside components, hooks, or feature screens.
+- Use barrel exports (`index.ts`) for convenient imports.
+
+## Exceptions
+
+- Local component props can stay in the same file only if used in exactly one component.
+- If props are reused across files, move them to `src/types/interfaces/ui/`.
+
+## Examples
+
+```typescript
+// ❌ Bad: shared domain interface inside a component file
+interface Project {
+  id: string
+  title: string
+}
+```
+
+```typescript
+// ✅ Good: project model lives in src/types/interfaces/project.ts
+export interface Project {
+  id: string
+  title: string
+}
+```
