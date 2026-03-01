@@ -1,0 +1,19 @@
+---
+description: Keep UI components in design-system with Storybook coverage
+alwaysApply: true
+---
+
+# UI Components Policy
+
+- Any new reusable UI component must be created in `design-system/components/`.
+- Export every added component from `design-system/components/index.ts` and `design-system/index.ts`.
+- Add a Storybook story in `design-system/stories/` for each new component.
+- App code in `src/` should consume UI components from `design-system` instead of re-implementing them locally.
+- If only styling is needed, prefer extending an existing design-system component over creating app-local UI widgets.
+
+## Definition of Done for UI changes
+
+- Component exists in `design-system/components/`.
+- Public exports are updated.
+- Storybook story demonstrates the component states/interactions.
+- App uses the design-system component.
