@@ -1,0 +1,17 @@
+---
+description: Use MCP Context7 first for library/package/technology research
+alwaysApply: true
+---
+
+# Context7 Research Workflow
+
+When a task includes studying or looking up information about libraries, packages, frameworks, APIs, or technologies:
+
+1. Start with MCP server `user-context7` as the primary source.
+2. Retrieve official docs and examples from Context7 before using other sources.
+3. Use web search only as a fallback when Context7 does not provide enough information.
+4. In responses, prefer recommendations grounded in Context7 results.
+
+## Example
+
+- If asked "how to use React Query mutations", first query `user-context7` for React Query docs/examples, then propose implementation.
