@@ -43,6 +43,9 @@ function App() {
     dragOverColumnId,
     setTaskInput,
     setSelectedContext,
+    createContext,
+    updateContext,
+    deleteContext,
     clearProjectInvariantWarning,
     handleCaptureItem,
     handleSetTaskStatus,
@@ -77,6 +80,7 @@ function App() {
   } = useBoardState()
   const clarifyTriggerRef = useRef<HTMLElement | null>(null)
   const [appMode, setAppMode] = useState<AppMode>('board')
+  const [isProjectDetailOpen, setIsProjectDetailOpen] = useState(false)
   const rawInboxItemIds = useMemo(
     () => new Set(inboxItems.map((inboxItem) => inboxItem.id)),
     [inboxItems],
@@ -131,6 +135,14 @@ function App() {
     focusBackToInboxList()
   }
 
+  function modeButtonClass(mode: AppMode) {
+    return `w-full cursor-pointer rounded-xl border px-4 py-2.5 text-sm font-semibold transition-[transform,box-shadow,background-color,border-color,color] duration-200 ease-in-out md:px-5 md:py-3 md:text-base ${
+      appMode === mode
+        ? 'border-sky-400/70 bg-sky-400/18 text-sky-200 shadow-[0_0_18px_rgba(56,189,248,0.24)]'
+        : 'border-slate-500/45 bg-slate-900/55 text-slate-300 hover:border-slate-400/70 hover:bg-slate-800/65 hover:text-slate-100'
+    }`
+  }
+
   return (
     <main className="flex h-full w-full flex-col overflow-hidden p-4 max-md:p-3">
       <BoardHeader
@@ -141,71 +153,49 @@ function App() {
         taskInput={taskInput}
         setTaskInput={setTaskInput}
         onCaptureItem={handleCaptureItem}
-        inboxItemsCount={inboxItems.length}
       />
 
-      <section className="mt-3 flex flex-wrap items-center gap-1.5">
-        <button
-          className={`cursor-pointer rounded-[9px] border px-2.5 py-1 text-xs font-semibold transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px ${
-            appMode === 'board'
-              ? 'border-sky-400/60 bg-sky-400/18 text-sky-200 shadow-[0_0_16px_rgba(56,189,248,0.2)]'
-              : 'border-slate-400/35 bg-slate-900/65 text-slate-300'
-          }`}
-          type="button"
-          onClick={() => setAppMode('board')}
-          aria-pressed={appMode === 'board'}
+      {!(appMode === 'projects' && isProjectDetailOpen) ? (
+        <section
+          className="mt-3 w-full rounded-2xl border border-slate-500/40 bg-slate-950/35 p-2 md:p-2.5"
+          aria-label="Переключение режима работы"
         >
-          Inbox
-        </button>
-        <button
-          className={`cursor-pointer rounded-[9px] border px-2.5 py-1 text-xs font-semibold transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px ${
-            appMode === 'engage'
-              ? 'border-sky-400/60 bg-sky-400/18 text-sky-200 shadow-[0_0_16px_rgba(56,189,248,0.2)]'
-              : 'border-slate-400/35 bg-slate-900/65 text-slate-300'
-          }`}
-          type="button"
-          onClick={() => setAppMode('engage')}
-          aria-pressed={appMode === 'engage'}
-        >
-          Engage
-        </button>
-        <button
-          className={`cursor-pointer rounded-[9px] border px-2.5 py-1 text-xs font-semibold transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px ${
-            appMode === 'projects'
-              ? 'border-sky-400/60 bg-sky-400/18 text-sky-200 shadow-[0_0_16px_rgba(56,189,248,0.2)]'
-              : 'border-slate-400/35 bg-slate-900/65 text-slate-300'
-          }`}
-          type="button"
-          onClick={() => setAppMode('projects')}
-          aria-pressed={appMode === 'projects'}
-        >
-          Projects
-        </button>
-        <button
-          className={`cursor-pointer rounded-[9px] border px-2.5 py-1 text-xs font-semibold transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px ${
-            appMode === 'review'
-              ? 'border-sky-400/60 bg-sky-400/18 text-sky-200 shadow-[0_0_16px_rgba(56,189,248,0.2)]'
-              : 'border-slate-400/35 bg-slate-900/65 text-slate-300'
-          }`}
-          type="button"
-          onClick={() => setAppMode('review')}
-          aria-pressed={appMode === 'review'}
-        >
-          Weekly Review
-        </button>
-        <button
-          className={`cursor-pointer rounded-[9px] border px-2.5 py-1 text-xs font-semibold transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px ${
-            appMode === 'guide'
-              ? 'border-sky-400/60 bg-sky-400/18 text-sky-200 shadow-[0_0_16px_rgba(56,189,248,0.2)]'
-              : 'border-slate-400/35 bg-slate-900/65 text-slate-300'
-          }`}
-          type="button"
-          onClick={() => setAppMode('guide')}
-          aria-pressed={appMode === 'guide'}
-        >
-          Руководство
-        </button>
-      </section>
+          <div className="grid w-full grid-cols-2 gap-2 md:grid-cols-4 md:gap-2.5">
+            <button
+              className={modeButtonClass('board')}
+              type="button"
+              onClick={() => setAppMode('board')}
+              aria-pressed={appMode === 'board'}
+            >
+              Inbox ({inboxItems.length})
+            </button>
+            <button
+              className={modeButtonClass('engage')}
+              type="button"
+              onClick={() => setAppMode('engage')}
+              aria-pressed={appMode === 'engage'}
+            >
+              Engage
+            </button>
+            <button
+              className={modeButtonClass('projects')}
+              type="button"
+              onClick={() => setAppMode('projects')}
+              aria-pressed={appMode === 'projects'}
+            >
+              Projects
+            </button>
+            <button
+              className={modeButtonClass('review')}
+              type="button"
+              onClick={() => setAppMode('review')}
+              aria-pressed={appMode === 'review'}
+            >
+              Weekly Review
+            </button>
+          </div>
+        </section>
+      ) : null}
       {projectInvariantWarning ? (
         <section className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-400/45 bg-amber-400/12 px-3 py-2">
           <p className="m-0 text-sm text-amber-100">{projectInvariantWarning}</p>
@@ -245,19 +235,24 @@ function App() {
           />
         </section>
       ) : appMode === 'engage' ? (
-        <section className="mt-5 grid min-h-0 flex-1 grid-rows-[auto_1fr] gap-3 overflow-y-auto pr-1 max-md:pr-0">
+        <section className="mt-5 grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden pr-1 md:grid-cols-[minmax(230px,1fr)_minmax(0,3fr)] max-md:pr-0">
           <ContextFilterBar
             contexts={contexts}
             selectedContextId={selectedContextId}
             contextActiveNextActionCounts={contextActiveNextActionCounts}
             onSelectContext={setSelectedContext}
+            onCreateContext={createContext}
+            onUpdateContext={updateContext}
+            onDeleteContext={deleteContext}
           />
-          <NextActionList
-            nextActions={visibleNextActions}
-            contextsById={contextsById}
-            selectedContextLabel={selectedContextLabel}
-            onMarkDone={markNextActionDone}
-          />
+          <div className="min-h-0 overflow-y-auto rounded-2xl border border-slate-500/25 bg-slate-950/20 p-2.5 md:p-3">
+            <NextActionList
+              nextActions={visibleNextActions}
+              contextsById={contextsById}
+              selectedContextLabel={selectedContextLabel}
+              onMarkDone={markNextActionDone}
+            />
+          </div>
         </section>
       ) : appMode === 'projects' ? (
         <ProjectView
@@ -280,6 +275,7 @@ function App() {
           }
           onBindNextAction={bindNextActionToProject}
           onUnbindNextAction={unbindNextActionFromProject}
+          onProjectDetailOpenChange={setIsProjectDetailOpen}
         />
       ) : appMode === 'review' ? (
         <WeeklyReviewView

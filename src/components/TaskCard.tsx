@@ -5,7 +5,11 @@ interface TaskCardProps {
   columns: Column[]
   isLegacy: boolean
   isRawItem: boolean
-  onSetTaskStatus: (taskId: string, nextStatus: TaskStatus) => void
+  onSetTaskStatus: (
+    taskId: string,
+    nextStatus: TaskStatus,
+    waitingDetails?: { waitingFor: string; waitingDeadline: string },
+  ) => void
   onMoveTask: (taskId: string, nextColumnId: string) => void
   onDeleteTask: (taskId: string) => void
   onDragStart: (taskId: string) => void
@@ -15,20 +19,26 @@ interface TaskCardProps {
 
 const TASK_STATUS_OPTIONS: Array<{ value: TaskStatus; label: string }> = [
   { value: 'todo', label: 'К выполнению' },
-  { value: 'in_progress', label: 'В работе' },
-  { value: 'done', label: 'Готово' },
+  { value: 'in_progress', label: 'Выполняется' },
+  { value: 'waiting', label: 'Ожидается' },
+  { value: 'done', label: 'Закончен' },
+  { value: 'obsolete', label: 'Не актуальный' },
 ]
 
 const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   todo: 'К выполнению',
-  in_progress: 'В работе',
-  done: 'Готово',
+  in_progress: 'Выполняется',
+  waiting: 'Ожидается',
+  done: 'Закончен',
+  obsolete: 'Не актуальный',
 }
 
 const TASK_STATUS_CLASSES: Record<TaskStatus, string> = {
   todo: 'border-sky-400/45 bg-sky-400/14 text-cyan-300',
   in_progress: 'border-yellow-400/45 bg-yellow-400/14 text-amber-200',
+  waiting: 'border-orange-400/45 bg-orange-400/14 text-orange-200',
   done: 'border-green-400/45 bg-green-400/14 text-green-300',
+  obsolete: 'border-slate-500/45 bg-slate-500/14 text-slate-300',
 }
 
 function formatCreatedAt(value: string) {
@@ -41,6 +51,19 @@ function formatCreatedAt(value: string) {
     day: '2-digit',
     month: 'short',
   })}`
+}
+
+function formatWaitingDeadline(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 export function TaskCard({
@@ -56,6 +79,35 @@ export function TaskCard({
   onStartClarify,
 }: TaskCardProps) {
   const showMoveControl = columns.length > 1
+  const isDone = task.status === 'done'
+  const isObsolete = task.status === 'obsolete'
+
+  function handleStatusChange(nextStatus: TaskStatus) {
+    if (nextStatus !== 'waiting') {
+      onSetTaskStatus(task.id, nextStatus)
+      return
+    }
+
+    const waitingForPrompt = window.prompt(
+      'От кого ожидаем?',
+      task.waitingFor?.trim() ?? '',
+    )
+    const waitingFor = waitingForPrompt?.trim() ?? ''
+    if (!waitingFor) {
+      return
+    }
+
+    const waitingDeadlinePrompt = window.prompt(
+      'Дедлайн ожидания (например, 2026-03-10):',
+      task.waitingDeadline?.trim() ?? '',
+    )
+    const waitingDeadline = waitingDeadlinePrompt?.trim() ?? ''
+    if (!waitingDeadline) {
+      return
+    }
+
+    onSetTaskStatus(task.id, nextStatus, { waitingFor, waitingDeadline })
+  }
 
   return (
     <div
@@ -76,17 +128,18 @@ export function TaskCard({
               Legacy
             </span>
           )}
-          {isRawItem && (
-            <span className="w-fit rounded-full border border-sky-400/45 bg-sky-400/15 px-2 py-0.5 text-[11px] font-bold tracking-[0.02em] text-sky-200">
-              Inbox
-            </span>
-          )}
+
         </div>
         <p
-          className={`m-0 text-[0.96rem] leading-[1.35] text-slate-200 ${task.status === 'done' ? 'text-slate-400 line-through' : ''}`}
+          className={`m-0 text-[0.96rem] leading-[1.35] text-slate-200 ${isDone ? 'text-slate-400 line-through' : ''} ${isObsolete ? 'text-slate-400' : ''}`}
         >
           {task.title}
         </p>
+        {task.status === 'waiting' && task.waitingFor && task.waitingDeadline ? (
+          <p className="m-0 text-xs text-orange-200/90">
+            Ожидаем от: {task.waitingFor} до {formatWaitingDeadline(task.waitingDeadline)}
+          </p>
+        ) : null}
         <span className="m-0 text-xs text-slate-400">{formatCreatedAt(task.createdAt)}</span>
       </div>
 
@@ -98,9 +151,7 @@ export function TaskCard({
         <select
           className="w-full rounded-[10px] border border-slate-400/35 bg-slate-900/75 px-2.5 py-2 text-sm text-slate-200 transition-[border-color,box-shadow,background-color] duration-200 ease-in-out focus:border-sky-400/90 focus:bg-slate-900/90 focus:shadow-[0_0_0_3px_rgba(56,189,248,0.22)] focus:outline-none"
           value={task.status}
-          onChange={(event) =>
-            onSetTaskStatus(task.id, event.target.value as TaskStatus)
-          }
+          onChange={(event) => handleStatusChange(event.target.value as TaskStatus)}
           aria-label="Изменить статус задачи"
         >
           {TASK_STATUS_OPTIONS.map((statusOption) => (

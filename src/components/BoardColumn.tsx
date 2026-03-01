@@ -11,7 +11,11 @@ interface BoardColumnProps {
   isFullWidth?: boolean
   isDragOver: boolean
   rawInboxItemIds: Set<string>
-  onSetTaskStatus: (taskId: string, nextStatus: TaskStatus) => void
+  onSetTaskStatus: (
+    taskId: string,
+    nextStatus: TaskStatus,
+    waitingDetails?: { waitingFor: string; waitingDeadline: string },
+  ) => void
   onMoveTask: (taskId: string, nextColumnId: string) => void
   onDeleteTask: (taskId: string) => void
   onDragStart: (taskId: string) => void
@@ -56,13 +60,6 @@ export function BoardColumn({
 
   return (
     <article className={columnClasses}>
-      <div className="flex items-center justify-between">
-        <h2 className="m-0 text-base tracking-[0.02em] text-slate-200">{column.title}</h2>
-        <span className="rounded-full border border-sky-400/40 bg-sky-400/16 px-[9px] py-0.5 text-xs font-bold text-sky-300">
-          {tasks.length}
-        </span>
-      </div>
-
       <div
         className="grid min-h-0 content-start gap-2 overflow-y-auto pr-0.5"
         data-inbox-list={isInbox ? 'true' : undefined}

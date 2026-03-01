@@ -63,7 +63,13 @@ const DEFAULT_BOARD_STATE: BoardState = {
   reviewHistory: [],
 }
 
-const TASK_STATUSES: TaskStatus[] = ['todo', 'in_progress', 'done']
+const TASK_STATUSES: TaskStatus[] = [
+  'todo',
+  'in_progress',
+  'waiting',
+  'done',
+  'obsolete',
+]
 const NEXT_ACTION_STATUSES: NextActionStatus[] = ['active', 'done']
 const NEXT_ACTION_ENERGY_LEVELS: NextActionEnergy[] = ['low', 'medium', 'high']
 const PROJECT_STATUSES: ProjectStatus[] = ['active', 'on_hold', 'done']
@@ -103,6 +109,17 @@ function isTask(value: unknown): value is Task {
     typeof value.columnId === 'string' &&
     'status' in value &&
     isTaskStatus(value.status) &&
+    (!('waitingFor' in value) ||
+      value.waitingFor === undefined ||
+      (typeof value.waitingFor === 'string' && value.waitingFor.trim().length > 0)) &&
+    (!('waitingDeadline' in value) ||
+      value.waitingDeadline === undefined ||
+      (typeof value.waitingDeadline === 'string' && value.waitingDeadline.trim().length > 0)) &&
+    (value.status !== 'waiting' ||
+      (typeof value.waitingFor === 'string' &&
+        value.waitingFor.trim().length > 0 &&
+        typeof value.waitingDeadline === 'string' &&
+        value.waitingDeadline.trim().length > 0)) &&
     'createdAt' in value &&
     typeof value.createdAt === 'string'
   )
@@ -826,10 +843,30 @@ export function useBoardState() {
     setColumnInput('')
   }
 
-  function handleSetTaskStatus(taskId: string, nextStatus: TaskStatus) {
+  function handleSetTaskStatus(
+    taskId: string,
+    nextStatus: TaskStatus,
+    waitingDetails?: { waitingFor: string; waitingDeadline: string },
+  ) {
     setTasks((currentTasks) =>
       currentTasks.map((task) =>
-        task.id === taskId ? { ...task, status: nextStatus } : task,
+        task.id === taskId
+          ? nextStatus === 'waiting'
+            ? waitingDetails?.waitingFor.trim() && waitingDetails.waitingDeadline.trim()
+              ? {
+                  ...task,
+                  status: nextStatus,
+                  waitingFor: waitingDetails.waitingFor.trim(),
+                  waitingDeadline: waitingDetails.waitingDeadline.trim(),
+                }
+              : task
+            : {
+                ...task,
+                status: nextStatus,
+                waitingFor: undefined,
+                waitingDeadline: undefined,
+              }
+          : task,
       ),
     )
   }
@@ -1171,6 +1208,98 @@ export function useBoardState() {
     setSelectedContextId(
       contexts.some((context) => context.id === nextContextId) ? nextContextId : null,
     )
+  }
+
+  function normalizeContextName(name: string) {
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      return ''
+    }
+    return trimmedName.startsWith('@') ? trimmedName : `@${trimmedName}`
+  }
+
+  function createContext(input: { name: string; description: string }) {
+    const normalizedName = normalizeContextName(input.name)
+    const normalizedDescription = input.description.trim()
+    if (!normalizedName) {
+      return false
+    }
+
+    const hasDuplicate = contexts.some(
+      (context) => context.name.toLowerCase() === normalizedName.toLowerCase(),
+    )
+    if (hasDuplicate) {
+      return false
+    }
+
+    setContexts((currentContexts) => [
+      ...currentContexts,
+      {
+        id: crypto.randomUUID(),
+        name: normalizedName,
+        description: normalizedDescription || 'Custom context',
+      },
+    ])
+    return true
+  }
+
+  function updateContext(contextId: string, input: { name: string; description: string }) {
+    const normalizedName = normalizeContextName(input.name)
+    const normalizedDescription = input.description.trim()
+    if (!normalizedName) {
+      return false
+    }
+
+    const hasDuplicate = contexts.some(
+      (context) =>
+        context.id !== contextId &&
+        context.name.toLowerCase() === normalizedName.toLowerCase(),
+    )
+    if (hasDuplicate) {
+      return false
+    }
+
+    let isUpdated = false
+    setContexts((currentContexts) =>
+      currentContexts.map((context) => {
+        if (context.id !== contextId) {
+          return context
+        }
+        isUpdated = true
+        return {
+          ...context,
+          name: normalizedName,
+          description: normalizedDescription || context.description,
+        }
+      }),
+    )
+    return isUpdated
+  }
+
+  function deleteContext(contextId: string) {
+    if (contexts.length <= 1) {
+      return false
+    }
+
+    const fallbackContext = contexts.find((context) => context.id !== contextId)
+    if (!fallbackContext) {
+      return false
+    }
+
+    setContexts((currentContexts) =>
+      currentContexts.filter((context) => context.id !== contextId),
+    )
+    setNextActions((currentNextActions) =>
+      currentNextActions.map((nextAction) =>
+        nextAction.contextId === contextId
+          ? { ...nextAction, contextId: fallbackContext.id }
+          : nextAction,
+      ),
+    )
+    setSelectedContextId((currentSelectedContextId) =>
+      currentSelectedContextId === contextId ? null : currentSelectedContextId,
+    )
+    return true
   }
 
   function createProject(title: string) {
@@ -1608,6 +1737,9 @@ export function useBoardState() {
     setTaskInput,
     setColumnInput,
     setSelectedContext,
+    createContext,
+    updateContext,
+    deleteContext,
     clearProjectInvariantWarning,
     handleCaptureItem,
     handleAddColumn,

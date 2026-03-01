@@ -5,5 +5,7 @@ export interface Task {
   title: string
   columnId: string
   status: TaskStatus
+  waitingFor?: string
+  waitingDeadline?: string
   createdAt: string
 }
