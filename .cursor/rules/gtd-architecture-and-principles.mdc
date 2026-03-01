@@ -27,6 +27,11 @@ alwaysApply: false
 - Add storage version bumps for breaking shape changes and provide fallback for invalid or stale snapshots.
 - Keep derived data in selectors (`inboxItems`, `visibleNextActions`, `projectsWithoutNextAction`) rather than storing duplicates in state.
 - Use stable IDs and timestamps for all GTD entities; never regenerate IDs during migration.
+- Keep shared type system split by kind:
+  - `src/types/interfaces/` for interfaces
+  - `src/types/enums/` for enum-like unions
+  - `src/types/types/` for composite type aliases
+- Keep `src/types/board.ts`, `src/types/gtd.ts`, `src/types/storage.ts` as compatibility/barrel layers only.
 
 ## UI and Composition Rules
 

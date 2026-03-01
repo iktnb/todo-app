@@ -1,16 +1,52 @@
-# React + Vite
+# IKTNB Todo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Simple Kanban-style board used as a foundation for incremental GTD evolution.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## Local storage snapshot
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Board state is persisted in local storage under key:
 
-## Expanding the ESLint configuration
+- `iktnb.board.snapshot`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Snapshot format:
+
+```json
+{
+  "version": 1,
+  "columns": [{ "id": "inbox", "title": "Inbox" }],
+  "tasks": [
+    {
+      "id": "uuid",
+      "title": "Example",
+      "columnId": "inbox",
+      "status": "todo",
+      "createdAt": "2026-03-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+Version policy:
+
+- Increase `version` only for breaking snapshot shape or meaning changes.
+- On invalid JSON or unsupported version, the app falls back to default state (`Inbox`, no tasks).
+- Compatible snapshots can be loaded and sanitized (for example, tasks referencing missing columns are ignored).
+
+## FLOW entity mapping (current app)
+
+Current code is still a pre-GTD board. Mapping to `FLOW.md` is temporary and explicit:
+
+| FLOW entity | Current app analog |
+| --- | --- |
+| `Item` (raw capture) | `Task` in Inbox (`columnId = "inbox"`) |
+| `Capture` stage | Inbox input in board UI |
+| Clarified outcomes (`NextAction`, `Project`, etc.) | Not implemented yet |
+| `Context`, `Review`, `Engage` filters | Not implemented yet |
+| State container | `useBoardState` hook (`columns`, `tasks`) |
