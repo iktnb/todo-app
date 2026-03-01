@@ -1,0 +1,39 @@
+---
+description: Avoid magic strings; use enums for domain values
+alwaysApply: true
+---
+
+# No Magic Strings
+
+Do not compare, assign, or pass domain values as inline string literals.
+Magic strings are an anti-pattern and make refactoring/error checking harder.
+
+Use enums (or enum-like centralized declarations in `src/types/enums/`) and named members instead of raw strings.
+
+## Required
+
+- Replace inline domain strings like status, type, mode, role, and action names with enum members.
+- Import and use shared enums from `src/types/enums/` (one model per file + barrel exports).
+- Keep UI-only one-off labels as plain strings only when they are not domain identifiers.
+
+## Examples
+
+```typescript
+// ❌ Bad
+if (secondProject.status === 'active') {
+  // ...
+}
+
+// ✅ Good
+if (secondProject.status === ProjectStatus.Active) {
+  // ...
+}
+```
+
+```typescript
+// ❌ Bad
+dispatch({ type: 'archive-project' })
+
+// ✅ Good
+dispatch({ type: ProjectAction.Archive })
+```

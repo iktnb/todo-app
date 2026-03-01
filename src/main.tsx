@@ -1,12 +1,15 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App'
-import { PwaRegistration } from './pwa/PwaRegistration'
-import './index.css'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import { PwaRegistration } from "./pwa/PwaRegistration";
+import { I18nProvider } from "./i18n/I18nProvider";
+import "./index.css";
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <PwaRegistration />
-    <App />
+    <I18nProvider>
+      <PwaRegistration />
+      <App />
+    </I18nProvider>
   </StrictMode>,
-)
+);

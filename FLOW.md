@@ -25,12 +25,12 @@ Everything enters the system as a neutral **Item**.
 
 | Field      | Type     | Required | Description                          |
 | ---------- | -------- | -------- | ------------------------------------ |
-| id         | UUID     | ✅        | Unique identifier                    |
-| title      | string   | ✅        | Raw thought ("Call John", "Fix bug") |
-| notes      | text     | ❌        | Optional brain dump                  |
-| created_at | datetime | ✅        | Capture timestamp                    |
-| source     | enum     | ❌        | manual / email / import / etc        |
-| clarified  | boolean  | ✅        | Has user processed this?             |
+| id         | UUID     | ✅       | Unique identifier                    |
+| title      | string   | ✅       | Raw thought ("Call John", "Fix bug") |
+| notes      | text     | ❌       | Optional brain dump                  |
+| created_at | datetime | ✅       | Capture timestamp                    |
+| source     | enum     | ❌       | manual / email / import / etc        |
+| clarified  | boolean  | ✅       | Has user processed this?             |
 
 At capture time — **NO OTHER FIELDS EXIST**.
 
@@ -80,16 +80,16 @@ Example:
 
 | Field         | Type          | Required | Description            |
 | ------------- | ------------- | -------- | ---------------------- |
-| id            | UUID          | ✅        | Same as Item ID        |
-| title         | string        | ✅        | Concrete action        |
-| notes         | text          | ❌        | Supporting info        |
-| context_id    | UUID          | ✅        | Where it can be done   |
-| energy        | enum          | ❌        | low / medium / high    |
-| time_estimate | int (minutes) | ❌        | Helps filtering        |
-| due_at        | datetime      | ❌        | Only if truly required |
-| project_id    | UUID          | ❌        | Linked project         |
-| status        | enum          | ✅        | active / done          |
-| created_at    | datetime      | ✅        |                        |
+| id            | UUID          | ✅       | Same as Item ID        |
+| title         | string        | ✅       | Concrete action        |
+| notes         | text          | ❌       | Supporting info        |
+| context_id    | UUID          | ✅       | Where it can be done   |
+| energy        | enum          | ❌       | low / medium / high    |
+| time_estimate | int (minutes) | ❌       | Helps filtering        |
+| due_at        | datetime      | ❌       | Only if truly required |
+| project_id    | UUID          | ❌       | Linked project         |
+| status        | enum          | ✅       | active / done          |
+| created_at    | datetime      | ✅       |                        |
 
 ---
 
@@ -104,12 +104,12 @@ Example:
 
 | Field      | Type     | Required | Description             |
 | ---------- | -------- | -------- | ----------------------- |
-| id         | UUID     | ✅        |                         |
-| title      | string   | ✅        | Outcome-based name      |
-| notes      | text     | ❌        | Vision / scope          |
-| status     | enum     | ✅        | active / on_hold / done |
-| review_at  | datetime | ✅        | Used in Weekly Review   |
-| created_at | datetime | ✅        |                         |
+| id         | UUID     | ✅       |                         |
+| title      | string   | ✅       | Outcome-based name      |
+| notes      | text     | ❌       | Vision / scope          |
+| status     | enum     | ✅       | active / on_hold / done |
+| review_at  | datetime | ✅       | Used in Weekly Review   |
+| created_at | datetime | ✅       |                         |
 
 Projects MUST always have ≥1 NextAction.
 
@@ -123,11 +123,11 @@ This replaces traditional "priority".
 
 Examples:
 
-* `@computer`
-* `@phone`
-* `@home`
-* `@deep-work`
-* `@5min`
+- `@computer`
+- `@phone`
+- `@home`
+- `@deep-work`
+- `@5min`
 
 ### Fields
 
@@ -255,10 +255,10 @@ GET  /review
 
 To launch v1 you only need:
 
-* Capture Inbox
-* Clarify Wizard
-* NextAction Lists by Context
-* Project View
-* Weekly Review
+- Capture Inbox
+- Clarify Wizard
+- NextAction Lists by Context
+- Project View
+- Weekly Review
 
 That is the complete GTD loop.

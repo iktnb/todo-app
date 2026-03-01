@@ -1,22 +1,23 @@
-import type { TrashReason } from '../enums/trash-reason'
+import { ClarifyOutcome } from "../enums/clarify-outcome";
+import type { TrashReason } from "../enums/trash-reason";
 
 export type ClarifyOutcomeInput =
   | {
-      outcome: 'next_action'
-      contextId: string
-      title?: string
+      outcome: typeof ClarifyOutcome.NextAction;
+      contextId: string;
+      title?: string;
     }
   | {
-      outcome: 'project'
-      title: string
-      notes?: string
+      outcome: typeof ClarifyOutcome.Project;
+      title: string;
+      notes?: string;
     }
   | {
-      outcome: 'someday'
-      reviewAt?: string
-      notes?: string
+      outcome: typeof ClarifyOutcome.Someday;
+      reviewAt?: string;
+      notes?: string;
     }
   | {
-      outcome: 'trash'
-      reason?: TrashReason
-    }
+      outcome: typeof ClarifyOutcome.Trash;
+      reason?: TrashReason;
+    };

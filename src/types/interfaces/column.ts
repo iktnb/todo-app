@@ -1,4 +1,4 @@
 export interface Column {
-  id: string
-  title: string
+  id: string;
+  title: string;
 }

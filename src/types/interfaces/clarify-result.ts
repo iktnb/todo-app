@@ -1,6 +1,6 @@
-import type { ClarifyOutcome } from '../enums/clarify-outcome'
+import type { ClarifyOutcome } from "../enums/clarify-outcome";
 
 export interface ClarifyResult {
-  outcome: ClarifyOutcome
-  itemTitle: string
+  outcome: ClarifyOutcome;
+  itemTitle: string;
 }

@@ -1,35 +1,37 @@
-import { useEffect } from 'react'
-import { useRegisterSW } from 'virtual:pwa-register/react'
+import { useEffect } from "react";
+import { useRegisterSW } from "virtual:pwa-register/react";
+import { useI18n } from "../i18n/useI18n";
 
 export function PwaRegistration() {
+  const { t } = useI18n();
   const {
     needRefresh: [needRefresh],
     offlineReady: [offlineReady],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisterError(error: unknown) {
-      console.error('Service worker registration failed', error)
+      console.error("Service worker registration failed", error);
     },
-  })
+  });
 
   useEffect(() => {
     if (!offlineReady) {
-      return
+      return;
     }
 
-    console.info('FlowAnchor Todo is ready for offline usage')
-  }, [offlineReady])
+    console.info(t("pwa.offlineReady"));
+  }, [offlineReady, t]);
 
   useEffect(() => {
     if (!needRefresh) {
-      return
+      return;
     }
 
-    const shouldUpdate = window.confirm('Доступна новая версия приложения. Обновить сейчас?')
+    const shouldUpdate = window.confirm(t("pwa.updateConfirm"));
     if (shouldUpdate) {
-      void updateServiceWorker(true)
+      void updateServiceWorker(true);
     }
-  }, [needRefresh, updateServiceWorker])
+  }, [needRefresh, t, updateServiceWorker]);
 
-  return null
+  return null;
 }

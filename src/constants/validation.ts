@@ -1,1 +1,1 @@
-export const ITEM_TITLE_MAX_LENGTH = 140
+export const ITEM_TITLE_MAX_LENGTH = 140;

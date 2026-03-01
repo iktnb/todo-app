@@ -1,7 +1,11 @@
+export const ClarifyWizardStep = {
+  Actionable: "actionable",
+  OneStep: "one_step",
+  NonActionable: "non_actionable",
+  NextActionDetails: "next_action_details",
+  ProjectDetails: "project_details",
+  Confirm: "confirm",
+} as const;
+
 export type ClarifyWizardStep =
-  | 'actionable'
-  | 'one_step'
-  | 'non_actionable'
-  | 'next_action_details'
-  | 'project_details'
-  | 'confirm'
+  (typeof ClarifyWizardStep)[keyof typeof ClarifyWizardStep];

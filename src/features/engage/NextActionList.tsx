@@ -1,10 +1,11 @@
-import type { Context, NextAction } from '../../types/gtd'
+import type { Context, NextAction } from "../../types/gtd";
+import { useI18n } from "../../i18n/useI18n";
 
 interface NextActionListProps {
-  nextActions: NextAction[]
-  contextsById: Map<string, Context>
-  selectedContextLabel: string
-  onMarkDone: (nextActionId: string) => void
+  nextActions: NextAction[];
+  contextsById: Map<string, Context>;
+  selectedContextLabel: string;
+  onMarkDone: (nextActionId: string) => void;
 }
 
 export function NextActionList({
@@ -13,24 +14,28 @@ export function NextActionList({
   selectedContextLabel,
   onMarkDone,
 }: NextActionListProps) {
+  const { t } = useI18n();
   if (nextActions.length === 0) {
     return (
       <div className="grid min-h-[220px] place-items-center rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-5 text-center">
         <div className="max-w-[420px]">
-          <h2 className="mt-0 mb-2 text-lg text-slate-100">Нет активных действий</h2>
+          <h2 className="mt-0 mb-2 text-lg text-slate-100">
+            {t("nextAction.empty.title")}
+          </h2>
           <p className="m-0 text-sm text-slate-300">
-            В контексте <span className="font-semibold text-sky-200">{selectedContextLabel}</span>{' '}
-            пока нет активных next actions.
+            {t("nextAction.empty.description", {
+              contextLabel: selectedContextLabel,
+            })}
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="grid content-start gap-2.5">
       {nextActions.map((nextAction) => {
-        const context = contextsById.get(nextAction.contextId)
+        const context = contextsById.get(nextAction.contextId);
 
         return (
           <article
@@ -39,23 +44,27 @@ export function NextActionList({
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="rounded-full border border-sky-400/45 bg-sky-400/15 px-2 py-0.5 text-[11px] font-bold tracking-[0.02em] text-sky-200">
-                {context?.name ?? 'Unknown context'}
+                {context?.name ?? t("nextAction.unknownContext")}
               </span>
               <button
                 className="cursor-pointer rounded-[10px] border border-emerald-400/50 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 shadow-[0_0_14px_rgba(52,211,153,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px"
                 type="button"
                 onClick={() => onMarkDone(nextAction.id)}
               >
-                Done
+                {t("nextAction.done")}
               </button>
             </div>
-            <p className="m-0 text-[0.98rem] text-slate-100">{nextAction.title}</p>
+            <p className="m-0 text-[0.98rem] text-slate-100">
+              {nextAction.title}
+            </p>
             {nextAction.notes ? (
-              <p className="m-0 text-sm leading-[1.35] text-slate-300">{nextAction.notes}</p>
+              <p className="m-0 text-sm leading-[1.35] text-slate-300">
+                {nextAction.notes}
+              </p>
             ) : null}
           </article>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

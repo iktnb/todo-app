@@ -1,20 +1,21 @@
-import { useEffect, useState } from 'react'
-import type { Dispatch, FormEvent, SetStateAction } from 'react'
-import { ITEM_TITLE_MAX_LENGTH } from '../constants/validation'
+import { useEffect, useState } from "react";
+import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { ITEM_TITLE_MAX_LENGTH } from "../constants/validation";
+import { useI18n } from "../i18n/useI18n";
 
 interface BackupActionResult {
-  ok: boolean
-  message: string
+  ok: boolean;
+  message: string;
 }
 
 interface BoardHeaderProps {
-  onResetLocalData: () => void
-  onOpenGuide: () => void
-  onCopyEncryptedBackup: () => Promise<BackupActionResult>
-  onImportEncryptedBackup: (serialized: string) => Promise<BackupActionResult>
-  taskInput: string
-  setTaskInput: Dispatch<SetStateAction<string>>
-  onCaptureItem: (event: FormEvent<HTMLFormElement>) => void
+  onResetLocalData: () => void;
+  onOpenGuide: () => void;
+  onCopyEncryptedBackup: () => Promise<BackupActionResult>;
+  onImportEncryptedBackup: (serialized: string) => Promise<BackupActionResult>;
+  taskInput: string;
+  setTaskInput: Dispatch<SetStateAction<string>>;
+  onCaptureItem: (event: FormEvent<HTMLFormElement>) => void;
 }
 
 export function BoardHeader({
@@ -26,56 +27,55 @@ export function BoardHeader({
   setTaskInput,
   onCaptureItem,
 }: BoardHeaderProps) {
-  const [backupStatus, setBackupStatus] = useState<string | null>(null)
-  const [isBackupPending, setIsBackupPending] = useState(false)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const { locale, setLocale, t } = useI18n();
+  const [backupStatus, setBackupStatus] = useState<string | null>(null);
+  const [isBackupPending, setIsBackupPending] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!isSettingsOpen) {
-      return
+      return;
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsSettingsOpen(false)
+      if (event.key === "Escape") {
+        setIsSettingsOpen(false);
       }
     }
 
-    window.addEventListener('keydown', handleEscape)
+    window.addEventListener("keydown", handleEscape);
     return () => {
-      window.removeEventListener('keydown', handleEscape)
-    }
-  }, [isSettingsOpen])
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isSettingsOpen]);
 
   function handleResetClick() {
-    const shouldReset = window.confirm(
-      'Сбросить локальные данные доски? Это удалит все пользовательские столбики и задачи.',
-    )
+    const shouldReset = window.confirm(t("header.settings.resetConfirm"));
 
     if (!shouldReset) {
-      return
+      return;
     }
 
-    onResetLocalData()
+    onResetLocalData();
   }
 
   async function handleCopyBackupClick() {
-    setIsBackupPending(true)
-    const result = await onCopyEncryptedBackup()
-    setBackupStatus(result.message)
-    setIsBackupPending(false)
+    setIsBackupPending(true);
+    const result = await onCopyEncryptedBackup();
+    setBackupStatus(result.message);
+    setIsBackupPending(false);
   }
 
   async function handlePasteBackupClick() {
-    const backupText = window.prompt('Вставьте зашифрованный backup состояния:')
+    const backupText = window.prompt(t("header.settings.backupPrompt"));
     if (backupText === null) {
-      return
+      return;
     }
 
-    setIsBackupPending(true)
-    const result = await onImportEncryptedBackup(backupText)
-    setBackupStatus(result.message)
-    setIsBackupPending(false)
+    setIsBackupPending(true);
+    const result = await onImportEncryptedBackup(backupText);
+    setBackupStatus(result.message);
+    setIsBackupPending(false);
   }
 
   return (
@@ -92,28 +92,28 @@ export function BoardHeader({
             value={taskInput}
             onChange={(event) => setTaskInput(event.target.value)}
             maxLength={ITEM_TITLE_MAX_LENGTH}
-            placeholder="Быстрый capture в Inbox из любого режима..."
-            aria-label="Быстрый capture item в Inbox"
+            placeholder={t("header.quickCapturePlaceholder")}
+            aria-label={t("header.quickCaptureAria")}
           />
           <button
             className="cursor-pointer rounded-[10px] border border-sky-400/50 bg-sky-400/12 px-4 py-2.5 text-base font-semibold text-cyan-300 shadow-[0_0_14px_rgba(56,189,248,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px max-sm:w-full"
             type="submit"
           >
-            + Inbox
+            {t("header.quickCaptureSubmit")}
           </button>
         </form>
         <div className="flex items-center justify-end gap-1.5">
           <button
-            className="cursor-pointer rounded-[10px] border border-cyan-400/50 bg-cyan-400/14 px-3 py-2 text-sm font-semibold text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
+            className="grid h-10 w-10 cursor-pointer place-items-center rounded-full text-cyan-200/90 transition-[color,transform,background-color] duration-200 ease-in-out hover:-translate-y-px hover:bg-cyan-400/14 hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:opacity-65"
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            aria-label="Открыть настройки"
-            title="Настройки"
+            aria-label={t("header.openSettings")}
+            title={t("header.settingsTitle")}
           >
             <span aria-hidden="true" className="block">
               <svg
                 viewBox="0 0 24 24"
-                className="h-[16px] w-[16px]"
+                className="h-[22px] w-[22px]"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.8"
@@ -121,17 +121,33 @@ export function BoardHeader({
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M10.34 2.8a1 1 0 0 1 1.32-.16l.66.53a1 1 0 0 0 1.03.14l.79-.34a1 1 0 0 1 1.28.45l.44.75a1 1 0 0 0 .9.52h.85a1 1 0 0 1 1 .88l.1.87a1 1 0 0 0 .63.84l.8.31a1 1 0 0 1 .58 1.22l-.24.84a1 1 0 0 0 .24 1.01l.6.64a1 1 0 0 1 0 1.35l-.6.64a1 1 0 0 0-.24 1.01l.24.84a1 1 0 0 1-.58 1.22l-.8.31a1 1 0 0 0-.63.84l-.1.87a1 1 0 0 1-1 .88h-.85a1 1 0 0 0-.9.52l-.44.75a1 1 0 0 1-1.28.45l-.79-.34a1 1 0 0 0-1.03.14l-.66.53a1 1 0 0 1-1.32-.16l-.55-.68a1 1 0 0 0-.97-.35l-.85.17a1 1 0 0 1-1.15-.7l-.24-.84a1 1 0 0 0-.73-.74l-.84-.24a1 1 0 0 1-.7-1.15l.17-.85a1 1 0 0 0-.35-.97l-.68-.55a1 1 0 0 1-.16-1.32l.53-.66a1 1 0 0 0 .14-1.03l-.34-.79a1 1 0 0 1 .45-1.28l.75-.44a1 1 0 0 0 .52-.9v-.85a1 1 0 0 1 .88-1l.87-.1a1 1 0 0 0 .84-.63l.31-.8a1 1 0 0 1 1.22-.58l.84.24a1 1 0 0 0 1.01-.24l.64-.6ZM12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"
+                  d="M11.25 3.34c.48-1.44 2.52-1.44 3 0a1.58 1.58 0 0 0 2.37.88c1.29-.77 2.73.67 1.96 1.96a1.58 1.58 0 0 0 .88 2.37c1.44.48 1.44 2.52 0 3a1.58 1.58 0 0 0-.88 2.37c.77 1.29-.67 2.73-1.96 1.96a1.58 1.58 0 0 0-2.37.88c-.48 1.44-2.52 1.44-3 0a1.58 1.58 0 0 0-2.37-.88c-1.29.77-2.73-.67-1.96-1.96a1.58 1.58 0 0 0-.88-2.37c-1.44-.48-1.44-2.52 0-3a1.58 1.58 0 0 0 .88-2.37c-.77-1.29.67-2.73 1.96-1.96a1.58 1.58 0 0 0 2.37-.88ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm3.47 1.61a4.5 4.5 0 1 0-7.5-3.22 4.5 4.5 0 0 0 7.5 3.22Z"
                 />
               </svg>
             </span>
           </button>
           <button
-            className="cursor-pointer rounded-[10px] border border-violet-400/50 bg-violet-400/14 px-3.5 py-2 text-sm font-semibold text-violet-200 shadow-[0_0_12px_rgba(167,139,250,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px"
+            className="grid h-10 w-10 cursor-pointer place-items-center rounded-full text-violet-200/90 transition-[color,transform,background-color] duration-200 ease-in-out hover:-translate-y-px hover:bg-violet-400/14 hover:text-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70"
             type="button"
             onClick={onOpenGuide}
+            aria-label={t("header.openGuide")}
+            title={t("header.openGuide")}
           >
-            Руководство
+            <span aria-hidden="true" className="block">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-[20px] w-[20px]"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9.09 9a3 3 0 1 1 5.82 1c0 2-3 2.5-3 4M12 17h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z"
+                />
+              </svg>
+            </span>
           </button>
         </div>
       </div>
@@ -149,13 +165,47 @@ export function BoardHeader({
             onClick={(event) => event.stopPropagation()}
           >
             <header className="mb-3">
-              <h2 id="settings-modal-title" className="m-0 text-lg text-slate-100">
-                Настройки
+              <h2
+                id="settings-modal-title"
+                className="m-0 text-lg text-slate-100"
+              >
+                {t("header.settings.heading")}
               </h2>
               <p className="mt-1 mb-0 text-sm text-slate-300">
-                Управление бэкапом и локальными данными.
+                {t("header.settings.description")}
               </p>
             </header>
+            <div className="mb-3 rounded-xl border border-slate-500/45 bg-slate-900/55 p-2.5">
+              <p className="m-0 text-xs text-slate-300">
+                {t("header.locale.label")}
+              </p>
+              <div className="mt-2 flex items-center gap-1">
+                <button
+                  className={`rounded-[8px] px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                    locale === "en"
+                      ? "bg-sky-400/20 text-sky-200"
+                      : "text-slate-300 hover:bg-slate-700/40"
+                  }`}
+                  type="button"
+                  onClick={() => setLocale("en")}
+                  aria-pressed={locale === "en"}
+                >
+                  {t("header.locale.en")}
+                </button>
+                <button
+                  className={`rounded-[8px] px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                    locale === "uk"
+                      ? "bg-sky-400/20 text-sky-200"
+                      : "text-slate-300 hover:bg-slate-700/40"
+                  }`}
+                  type="button"
+                  onClick={() => setLocale("uk")}
+                  aria-pressed={locale === "uk"}
+                >
+                  {t("header.locale.uk")}
+                </button>
+              </div>
+            </div>
             <div className="grid gap-2">
               <button
                 className="cursor-pointer rounded-[10px] border border-cyan-400/50 bg-cyan-400/14 px-3 py-2 text-sm font-semibold text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
@@ -163,7 +213,7 @@ export function BoardHeader({
                 onClick={() => void handleCopyBackupClick()}
                 disabled={isBackupPending}
               >
-                Скопировать backup
+                {t("header.settings.copyBackup")}
               </button>
               <button
                 className="cursor-pointer rounded-[10px] border border-cyan-400/50 bg-cyan-400/10 px-3 py-2 text-sm font-semibold text-cyan-100 shadow-[0_0_10px_rgba(34,211,238,0.15)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
@@ -171,18 +221,20 @@ export function BoardHeader({
                 onClick={() => void handlePasteBackupClick()}
                 disabled={isBackupPending}
               >
-                Вставить backup
+                {t("header.settings.pasteBackup")}
               </button>
               <button
                 className="cursor-pointer rounded-[10px] border border-rose-400/50 bg-rose-400/14 px-3 py-2 text-sm font-semibold text-rose-200 shadow-[0_0_12px_rgba(251,113,133,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px"
                 type="button"
                 onClick={handleResetClick}
               >
-                Сбросить локальные данные
+                {t("header.settings.resetData")}
               </button>
             </div>
             {backupStatus ? (
-              <p className="mt-3 mb-0 text-xs text-cyan-200/90">{backupStatus}</p>
+              <p className="mt-3 mb-0 text-xs text-cyan-200/90">
+                {backupStatus}
+              </p>
             ) : null}
             <div className="mt-3 border-t border-slate-700/80 pt-3">
               <button
@@ -190,12 +242,12 @@ export function BoardHeader({
                 type="button"
                 onClick={() => setIsSettingsOpen(false)}
               >
-                Закрыть
+                {t("header.settings.close")}
               </button>
             </div>
           </section>
         </div>
       ) : null}
     </header>
-  )
+  );
 }

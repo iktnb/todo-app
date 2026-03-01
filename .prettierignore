@@ -1,0 +1,10 @@
+src-tauri/
+design-system/
+node_modules/
+.vscode/
+.cursor/
+.github/
+.husky/
+.prettierignore
+.prettierrc
+.prettierignore

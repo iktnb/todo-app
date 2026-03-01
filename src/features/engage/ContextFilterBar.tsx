@@ -1,13 +1,17 @@
-import type { Context } from '../../types/gtd'
+import type { Context } from "../../types/gtd";
+import { useI18n } from "../../i18n/useI18n";
 
 interface ContextFilterBarProps {
-  contexts: Context[]
-  selectedContextId: string | null
-  contextActiveNextActionCounts: Record<string, number>
-  onSelectContext: (contextId: string | null) => void
-  onCreateContext: (input: { name: string; description: string }) => boolean
-  onUpdateContext: (contextId: string, input: { name: string; description: string }) => boolean
-  onDeleteContext: (contextId: string) => boolean
+  contexts: Context[];
+  selectedContextId: string | null;
+  contextActiveNextActionCounts: Record<string, number>;
+  onSelectContext: (contextId: string | null) => void;
+  onCreateContext: (input: { name: string; description: string }) => boolean;
+  onUpdateContext: (
+    contextId: string,
+    input: { name: string; description: string },
+  ) => boolean;
+  onDeleteContext: (contextId: string) => boolean;
 }
 
 export function ContextFilterBar({
@@ -19,81 +23,93 @@ export function ContextFilterBar({
   onUpdateContext,
   onDeleteContext,
 }: ContextFilterBarProps) {
+  const { t } = useI18n();
   const allContextsCount = Object.values(contextActiveNextActionCounts).reduce(
     (total, count) => total + count,
     0,
-  )
+  );
   const selectedContext =
     selectedContextId === null
       ? null
-      : contexts.find((context) => context.id === selectedContextId) ?? null
+      : (contexts.find((context) => context.id === selectedContextId) ?? null);
 
   function handleCreateContext() {
-    const name = window.prompt('Название контекста (например, @office):')
+    const name = window.prompt(t("board.contexts.createPrompt"));
     if (name === null) {
-      return
+      return;
     }
 
-    const description = window.prompt('Описание контекста (опционально):') ?? ''
-    const isCreated = onCreateContext({ name, description })
+    const description =
+      window.prompt(t("board.contexts.createDescriptionPrompt")) ?? "";
+    const isCreated = onCreateContext({ name, description });
     if (!isCreated) {
-      window.alert('Не удалось создать контекст. Проверьте название и уникальность.')
+      window.alert(t("board.contexts.createError"));
     }
   }
 
   function handleEditContext() {
     if (!selectedContext) {
-      return
+      return;
     }
 
-    const name = window.prompt('Новое название контекста:', selectedContext.name)
+    const name = window.prompt(
+      t("board.contexts.editPrompt"),
+      selectedContext.name,
+    );
     if (name === null) {
-      return
+      return;
     }
 
     const description =
-      window.prompt('Описание контекста:', selectedContext.description) ??
-      selectedContext.description
-    const isUpdated = onUpdateContext(selectedContext.id, { name, description })
+      window.prompt(
+        t("board.contexts.editDescriptionPrompt"),
+        selectedContext.description,
+      ) ?? selectedContext.description;
+    const isUpdated = onUpdateContext(selectedContext.id, {
+      name,
+      description,
+    });
     if (!isUpdated) {
-      window.alert('Не удалось обновить контекст. Проверьте название и уникальность.')
+      window.alert(t("board.contexts.editError"));
     }
   }
 
   function handleDeleteContext() {
     if (!selectedContext) {
-      return
+      return;
     }
 
     const shouldDelete = window.confirm(
-      `Удалить контекст "${selectedContext.name}"? Связанные Next Actions будут перенесены в другой контекст.`,
-    )
+      t("board.contexts.deleteConfirm", { name: selectedContext.name }),
+    );
     if (!shouldDelete) {
-      return
+      return;
     }
 
-    const isDeleted = onDeleteContext(selectedContext.id)
+    const isDeleted = onDeleteContext(selectedContext.id);
     if (!isDeleted) {
-      window.alert('Нельзя удалить последний контекст.')
+      window.alert(t("board.contexts.deleteError"));
     }
   }
 
   return (
     <div
       className="grid min-h-0 content-start gap-3 rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-3.5"
-      aria-label="Фильтр next actions по контексту"
+      aria-label={t("board.filterByContextAria")}
     >
-      <h3 className="m-0 text-sm font-semibold tracking-[0.02em] text-slate-200">Контексты</h3>
+      <h3 className="m-0 text-sm font-semibold tracking-[0.02em] text-slate-200">
+        {t("board.contexts.title")}
+      </h3>
       <button
         className={`w-full cursor-pointer border px-3 py-2.5 text-left text-base font-semibold transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px ${
           selectedContextId === null
-            ? 'border-sky-400/60 bg-sky-400/18 text-sky-200 shadow-[0_0_16px_rgba(56,189,248,0.2)]'
-            : 'border-slate-400/35 bg-slate-900/65 text-slate-300 hover:text-slate-100'
+            ? "border-sky-400/60 bg-sky-400/18 text-sky-200 shadow-[0_0_16px_rgba(56,189,248,0.2)]"
+            : "border-slate-400/35 bg-slate-900/65 text-slate-300 hover:text-slate-100"
         }`}
         type="button"
         onClick={() => onSelectContext(null)}
       >
-        All contexts ({allContextsCount})
+        {t("app.contexts.all")} ({allContextsCount})
       </button>
 
       <div className="grid min-h-0 content-start gap-2 overflow-y-auto pr-0.5">
@@ -102,8 +118,8 @@ export function ContextFilterBar({
             key={context.id}
             className={`w-full cursor-pointer border px-3 py-2.5 text-left text-base font-semibold transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px ${
               selectedContextId === context.id
-                ? 'border-sky-400/60 bg-sky-400/18 text-sky-200 shadow-[0_0_16px_rgba(56,189,248,0.2)]'
-                : 'border-slate-400/35 bg-slate-900/65 text-slate-300 hover:text-slate-100'
+                ? "border-sky-400/60 bg-sky-400/18 text-sky-200 shadow-[0_0_16px_rgba(56,189,248,0.2)]"
+                : "border-slate-400/35 bg-slate-900/65 text-slate-300 hover:text-slate-100"
             }`}
             type="button"
             onClick={() => onSelectContext(context.id)}
@@ -121,7 +137,7 @@ export function ContextFilterBar({
           type="button"
           onClick={handleCreateContext}
         >
-          + Контекст
+          {t("board.contexts.create")}
         </button>
         <button
           className="w-full cursor-pointer rounded-xl border border-violet-400/55 bg-violet-400/14 px-3 py-2 text-sm font-semibold text-violet-200 transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-55"
@@ -129,7 +145,7 @@ export function ContextFilterBar({
           onClick={handleEditContext}
           disabled={!selectedContext}
         >
-          Изменить
+          {t("board.contexts.edit")}
         </button>
         <button
           className="w-full cursor-pointer rounded-xl border border-rose-400/60 bg-rose-400/14 px-3 py-2 text-sm font-semibold text-rose-200 transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-55"
@@ -137,9 +153,9 @@ export function ContextFilterBar({
           onClick={handleDeleteContext}
           disabled={!selectedContext}
         >
-          Удалить
+          {t("board.contexts.delete")}
         </button>
       </div>
     </div>
-  )
+  );
 }

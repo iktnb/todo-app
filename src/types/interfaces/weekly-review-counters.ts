@@ -1,5 +1,5 @@
 export interface WeeklyReviewCounters {
-  inboxUnclarified: number
-  projectsMissingActions: number
-  waitingFollowUps: number
+  inboxUnclarified: number;
+  projectsMissingActions: number;
+  waitingFollowUps: number;
 }

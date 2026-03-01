@@ -1,1 +1,1 @@
-export type { ClarifyOutcomeInput } from './clarify-outcome-input'
+export type { ClarifyOutcomeInput } from "./clarify-outcome-input";

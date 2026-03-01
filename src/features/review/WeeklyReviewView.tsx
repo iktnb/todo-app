@@ -1,72 +1,35 @@
-import { ReviewStepper } from '../../../design-system/components/ReviewStepper'
-import type { Project, WeeklyReviewSnapshot } from '../../types/gtd'
+import { ReviewStepper } from "../../../design-system/components/ReviewStepper";
+import type { Project, WeeklyReviewSnapshot } from "../../types/gtd";
+import { useI18n } from "../../i18n/useI18n";
 
-type AppMode = 'board' | 'engage' | 'projects' | 'review'
+type AppMode = "board" | "engage" | "projects" | "review";
 
 interface ReviewCounters {
-  inboxUnclarified: number
-  projectsMissingActions: number
-  waitingFollowUps: number
+  inboxUnclarified: number;
+  projectsMissingActions: number;
+  waitingFollowUps: number;
 }
 
 interface WeeklyReviewViewProps {
-  currentStep: number
-  reviewStartedAt: string | null
-  reviewNote: string
-  reviewCounters: ReviewCounters
-  projectsWithoutNextAction: Project[]
-  somedayItemsCount: number
-  completedActionsCount: number
-  completedProjectsCount: number
-  isCompleteBlocked: boolean
-  completionError: string | null
-  lastCompletedReview: WeeklyReviewSnapshot | null
-  onStartReview: () => void
-  onNextStep: () => void
-  onPreviousStep: () => void
-  onSetStep: (nextStep: number) => void
-  onCompleteReview: () => void
-  onUpdateReviewNote: (note: string) => void
-  onNavigate: (mode: AppMode) => void
+  currentStep: number;
+  reviewStartedAt: string | null;
+  reviewNote: string;
+  reviewCounters: ReviewCounters;
+  projectsWithoutNextAction: Project[];
+  somedayItemsCount: number;
+  completedActionsCount: number;
+  completedProjectsCount: number;
+  isCompleteBlocked: boolean;
+  completionError: string | null;
+  lastCompletedReview: WeeklyReviewSnapshot | null;
+  onStartReview: () => void;
+  onNextStep: () => void;
+  onPreviousStep: () => void;
+  onSetStep: (nextStep: number) => void;
+  onCompleteReview: () => void;
+  onUpdateReviewNote: (note: string) => void;
+  onNavigate: (mode: AppMode) => void;
 }
-
-const REVIEW_STEPS = [
-  {
-    id: 'empty-inbox',
-    title: 'Empty Inbox',
-    description: 'Clarify all captured items and get inbox to zero.',
-  },
-  {
-    id: 'check-projects',
-    title: 'Check all Projects',
-    description: 'Review active outcomes and detect stale/problematic ones.',
-  },
-  {
-    id: 'ensure-next-action',
-    title: 'Ensure every Project has NextAction',
-    description: 'Every active project must keep at least one active action.',
-  },
-  {
-    id: 'review-waiting-for',
-    title: 'Review WaitingFor',
-    description: 'Track delegated commitments and follow-up points.',
-  },
-  {
-    id: 'clean-someday',
-    title: 'Clean Someday list',
-    description: 'Keep your non-committed ideas intentional.',
-  },
-  {
-    id: 'close-loops',
-    title: 'Close completed loops',
-    description: 'Close finished commitments and clear leftovers.',
-  },
-  {
-    id: 'set-intention',
-    title: 'Set intention for next week',
-    description: 'Capture your focus note for the coming week.',
-  },
-]
 
 export function WeeklyReviewView({
   currentStep,
@@ -88,36 +51,74 @@ export function WeeklyReviewView({
   onUpdateReviewNote,
   onNavigate,
 }: WeeklyReviewViewProps) {
-  const hasActiveReview = reviewStartedAt !== null
-  const isFinalStep = currentStep === REVIEW_STEPS.length - 1
+  const { t } = useI18n();
+  const reviewSteps = [
+    {
+      id: "empty-inbox",
+      title: t("review.steps.emptyInbox.title"),
+      description: t("review.steps.emptyInbox.description"),
+    },
+    {
+      id: "check-projects",
+      title: t("review.steps.checkProjects.title"),
+      description: t("review.steps.checkProjects.description"),
+    },
+    {
+      id: "ensure-next-action",
+      title: t("review.steps.ensureNextAction.title"),
+      description: t("review.steps.ensureNextAction.description"),
+    },
+    {
+      id: "review-waiting-for",
+      title: t("review.steps.waitingFor.title"),
+      description: t("review.steps.waitingFor.description"),
+    },
+    {
+      id: "clean-someday",
+      title: t("review.steps.cleanSomeday.title"),
+      description: t("review.steps.cleanSomeday.description"),
+    },
+    {
+      id: "close-loops",
+      title: t("review.steps.closeLoops.title"),
+      description: t("review.steps.closeLoops.description"),
+    },
+    {
+      id: "set-intention",
+      title: t("review.steps.setIntention.title"),
+      description: t("review.steps.setIntention.description"),
+    },
+  ];
+  const hasActiveReview = reviewStartedAt !== null;
+  const isFinalStep = currentStep === reviewSteps.length - 1;
 
   function renderCurrentStepBody() {
     if (currentStep === 0) {
       return (
         <div className="grid gap-3">
           <p className="m-0 text-sm text-slate-300">
-            Unclarified inbox items:{' '}
-            <span className="font-semibold text-slate-100">{reviewCounters.inboxUnclarified}</span>
+            {t("review.inboxUnclarified", {
+              count: reviewCounters.inboxUnclarified,
+            })}
           </p>
           <button
             className="w-fit cursor-pointer rounded-[10px] border border-sky-400/55 bg-sky-400/15 px-3 py-1.5 text-sm font-semibold text-sky-200"
             type="button"
-            onClick={() => onNavigate('board')}
+            onClick={() => onNavigate("board")}
           >
-            Go to Inbox
+            {t("review.goInbox")}
           </button>
         </div>
-      )
+      );
     }
 
     if (currentStep === 1) {
       return (
         <div className="grid gap-3">
           <p className="m-0 text-sm text-slate-300">
-            Projects requiring attention:{' '}
-            <span className="font-semibold text-slate-100">
-              {projectsWithoutNextAction.length}
-            </span>
+            {t("review.projectsNeedAttention", {
+              count: projectsWithoutNextAction.length,
+            })}
           </p>
           {projectsWithoutNextAction.length > 0 ? (
             <ul className="m-0 grid gap-1 pl-5 text-sm text-amber-200">
@@ -126,27 +127,28 @@ export function WeeklyReviewView({
               ))}
             </ul>
           ) : (
-            <p className="m-0 text-sm text-emerald-200">All active projects look healthy.</p>
+            <p className="m-0 text-sm text-emerald-200">
+              {t("review.allProjectsHealthy")}
+            </p>
           )}
           <button
             className="w-fit cursor-pointer rounded-[10px] border border-violet-400/55 bg-violet-400/15 px-3 py-1.5 text-sm font-semibold text-violet-200"
             type="button"
-            onClick={() => onNavigate('projects')}
+            onClick={() => onNavigate("projects")}
           >
-            Open Project View
+            {t("review.openProjectView")}
           </button>
         </div>
-      )
+      );
     }
 
     if (currentStep === 2) {
       return (
         <div className="grid gap-3">
           <p className="m-0 text-sm text-slate-300">
-            Active projects without next action:{' '}
-            <span className="font-semibold text-amber-200">
-              {reviewCounters.projectsMissingActions}
-            </span>
+            {t("review.projectsWithoutAction", {
+              count: reviewCounters.projectsMissingActions,
+            })}
           </p>
           {projectsWithoutNextAction.length > 0 ? (
             <div className="grid gap-1.5">
@@ -161,61 +163,66 @@ export function WeeklyReviewView({
             </div>
           ) : (
             <p className="m-0 text-sm text-emerald-200">
-              Rule satisfied: every active project has at least one next action.
+              {t("review.ruleSatisfied")}
             </p>
           )}
           <button
             className="w-fit cursor-pointer rounded-[10px] border border-violet-400/55 bg-violet-400/15 px-3 py-1.5 text-sm font-semibold text-violet-200"
             type="button"
-            onClick={() => onNavigate('projects')}
+            onClick={() => onNavigate("projects")}
           >
-            Fix in Projects
+            {t("review.fixInProjects")}
           </button>
         </div>
-      )
+      );
     }
 
     if (currentStep === 3) {
       return (
         <p className="m-0 text-sm text-slate-300">
-          Waiting follow-ups ready (future-ready counter):{' '}
-          <span className="font-semibold text-slate-100">{reviewCounters.waitingFollowUps}</span>
+          {t("review.waitingFollowUps", {
+            count: reviewCounters.waitingFollowUps,
+          })}
         </p>
-      )
+      );
     }
 
     if (currentStep === 4) {
       return (
         <p className="m-0 text-sm text-slate-300">
-          Someday list size: <span className="font-semibold text-slate-100">{somedayItemsCount}</span>
+          {t("review.somedaySize", { count: somedayItemsCount })}
         </p>
-      )
+      );
     }
 
     if (currentStep === 5) {
       return (
         <p className="m-0 text-sm text-slate-300">
-          Closed loops this cycle candidate: done actions{' '}
-          <span className="font-semibold text-slate-100">{completedActionsCount}</span>, done
-          projects <span className="font-semibold text-slate-100">{completedProjectsCount}</span>.
+          {t("review.closedLoops", {
+            actions: completedActionsCount,
+            projects: completedProjectsCount,
+          })}
         </p>
-      )
+      );
     }
 
     return (
       <div className="grid gap-2">
-        <label className="text-sm font-semibold text-slate-200" htmlFor="weekly-review-note">
-          Intention note for next week
+        <label
+          className="text-sm font-semibold text-slate-200"
+          htmlFor="weekly-review-note"
+        >
+          {t("review.intentionLabel")}
         </label>
         <textarea
           id="weekly-review-note"
           className="min-h-[110px] w-full rounded-xl border border-slate-400/35 bg-slate-900/75 px-3 py-2 text-sm text-slate-100"
           value={reviewNote}
           onChange={(event) => onUpdateReviewNote(event.target.value)}
-          placeholder="What should matter most next week?"
+          placeholder={t("review.intentionPlaceholder")}
         />
       </div>
-    )
+    );
   }
 
   return (
@@ -224,25 +231,27 @@ export function WeeklyReviewView({
       tabIndex={0}
       onKeyDown={(event) => {
         if (!hasActiveReview) {
-          return
+          return;
         }
-        if (event.key === 'ArrowRight') {
-          event.preventDefault()
-          onNextStep()
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          onNextStep();
         }
-        if (event.key === 'ArrowLeft') {
-          event.preventDefault()
-          onPreviousStep()
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          onPreviousStep();
         }
       }}
-      aria-label="Weekly Review"
+      aria-label={t("review.aria")}
     >
       <header className="grid gap-2 rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="m-0 text-lg text-slate-100">Weekly Review</h2>
+          <h2 className="m-0 text-lg text-slate-100">{t("review.title")}</h2>
           {reviewStartedAt ? (
             <p className="m-0 text-xs text-slate-300">
-              Started: {new Date(reviewStartedAt).toLocaleString()}
+              {t("review.startedAt", {
+                date: new Date(reviewStartedAt).toLocaleString(),
+              })}
             </p>
           ) : null}
         </div>
@@ -252,40 +261,61 @@ export function WeeklyReviewView({
             type="button"
             onClick={onStartReview}
           >
-            Start Weekly Review
+            {t("review.startButton")}
           </button>
         ) : null}
       </header>
 
       {!hasActiveReview && lastCompletedReview ? (
         <article className="grid gap-2 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 p-3.5">
-          <h3 className="m-0 text-base text-emerald-100">Review Completed</h3>
+          <h3 className="m-0 text-base text-emerald-100">
+            {t("review.completedTitle")}
+          </h3>
           <p className="m-0 text-sm text-emerald-50">
-            Completed at {new Date(lastCompletedReview.completedAt).toLocaleString()}
+            {t("review.completedAt", {
+              date: new Date(lastCompletedReview.completedAt).toLocaleString(),
+            })}
           </p>
           <p className="m-0 text-sm text-emerald-50">
-            Snapshot: inbox {lastCompletedReview.counters.inboxUnclarified}, missing actions{' '}
-            {lastCompletedReview.counters.projectsMissingActions}, waiting follow-ups{' '}
-            {lastCompletedReview.counters.waitingFollowUps}
+            {t("review.snapshot", {
+              inbox: lastCompletedReview.counters.inboxUnclarified,
+              missing: lastCompletedReview.counters.projectsMissingActions,
+              waiting: lastCompletedReview.counters.waitingFollowUps,
+            })}
           </p>
           <p className="m-0 text-sm text-emerald-50">
-            Note: {lastCompletedReview.note || 'No intention note provided.'}
+            {t("review.note", {
+              note: lastCompletedReview.note || t("review.noteFallback"),
+            })}
           </p>
         </article>
       ) : hasActiveReview ? (
         <div className="grid min-h-0 gap-3 md:grid-cols-[minmax(260px,320px)_1fr]">
           <ReviewStepper
-            steps={REVIEW_STEPS}
+            steps={reviewSteps}
             currentStep={currentStep}
             onStepSelect={onSetStep}
-            completedStepIndexes={Array.from({ length: currentStep }, (_, index) => index)}
+            completedStepIndexes={Array.from(
+              { length: currentStep },
+              (_, index) => index,
+            )}
+            labels={{
+              listAria: t("stepper.aria"),
+              stepAria: (index, title) =>
+                t("stepper.stepAria", { step: index + 1, title }),
+            }}
           />
           <article className="grid content-start gap-3 rounded-2xl border border-slate-400/30 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] p-3.5">
             <header className="grid gap-1">
               <p className="m-0 text-xs font-semibold tracking-[0.02em] text-slate-300">
-                Step {currentStep + 1} of {REVIEW_STEPS.length}
+                {t("review.stepIndicator", {
+                  current: currentStep + 1,
+                  total: reviewSteps.length,
+                })}
               </p>
-              <h3 className="m-0 text-base text-slate-100">{REVIEW_STEPS[currentStep].title}</h3>
+              <h3 className="m-0 text-base text-slate-100">
+                {reviewSteps[currentStep].title}
+              </h3>
             </header>
             {renderCurrentStepBody()}
             {completionError ? (
@@ -300,7 +330,7 @@ export function WeeklyReviewView({
                 onClick={onPreviousStep}
                 disabled={currentStep === 0}
               >
-                Previous
+                {t("review.previous")}
               </button>
               {!isFinalStep ? (
                 <button
@@ -308,7 +338,7 @@ export function WeeklyReviewView({
                   type="button"
                   onClick={onNextStep}
                 >
-                  Next step
+                  {t("review.next")}
                 </button>
               ) : (
                 <button
@@ -317,7 +347,7 @@ export function WeeklyReviewView({
                   onClick={onCompleteReview}
                   disabled={isCompleteBlocked}
                 >
-                  Complete Weekly Review
+                  {t("review.complete")}
                 </button>
               )}
             </div>
@@ -326,11 +356,10 @@ export function WeeklyReviewView({
       ) : (
         <div className="grid min-h-[220px] place-items-center rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-5 text-center">
           <p className="m-0 max-w-[560px] text-sm text-slate-300">
-            Start review to walk through all 7 GTD steps and complete integrity checks before
-            closing the week.
+            {t("review.startHint")}
           </p>
         </div>
       )}
     </section>
-  )
+  );
 }

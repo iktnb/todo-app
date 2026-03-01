@@ -98,10 +98,10 @@ Version policy:
 
 Current code is still a pre-GTD board. Mapping to `FLOW.md` is temporary and explicit:
 
-| FLOW entity | Current app analog |
-| --- | --- |
-| `Item` (raw capture) | `Task` in Inbox (`columnId = "inbox"`) |
-| `Capture` stage | Inbox input in board UI |
-| Clarified outcomes (`NextAction`, `Project`, etc.) | Not implemented yet |
-| `Context`, `Review`, `Engage` filters | Not implemented yet |
-| State container | `useBoardState` hook (`columns`, `tasks`) |
+| FLOW entity                                        | Current app analog                        |
+| -------------------------------------------------- | ----------------------------------------- |
+| `Item` (raw capture)                               | `Task` in Inbox (`columnId = "inbox"`)    |
+| `Capture` stage                                    | Inbox input in board UI                   |
+| Clarified outcomes (`NextAction`, `Project`, etc.) | Not implemented yet                       |
+| `Context`, `Review`, `Engage` filters              | Not implemented yet                       |
+| State container                                    | `useBoardState` hook (`columns`, `tasks`) |

@@ -1,7 +1,7 @@
-import type { ClarifyWizardStep } from '../enums/clarify-wizard-step'
+import type { ClarifyWizardStep } from "../enums/clarify-wizard-step";
 
 export interface ClarifyDecisionState {
-  step: ClarifyWizardStep
-  actionable?: boolean
-  oneStep?: boolean
+  step: ClarifyWizardStep;
+  actionable?: boolean;
+  oneStep?: boolean;
 }
