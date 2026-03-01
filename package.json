@@ -1,7 +1,7 @@
 {
   "name": "flowanchor-todo",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.3.0",
   "description": "FlowAnchor Todo is a calm, offline-first GTD workspace.",
   "type": "module",
   "scripts": {
