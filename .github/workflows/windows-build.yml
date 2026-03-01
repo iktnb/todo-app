@@ -6,6 +6,7 @@ on:
     branches:
       - main
     paths:
+      - "design-system/**"
       - "src/**"
       - "src-tauri/**"
       - "public/**"
