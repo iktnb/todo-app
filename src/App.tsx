@@ -109,6 +109,18 @@ function App() {
     if (cloudSyncState.status === CloudSyncStatusEnum.Syncing) {
       return t("header.sync.syncing");
     }
+    if (cloudSyncState.status === CloudSyncStatusEnum.Reconnecting) {
+      return t("header.sync.reconnecting");
+    }
+    if (cloudSyncState.status === CloudSyncStatusEnum.CatchingUp) {
+      return t("header.sync.catchingUp");
+    }
+    if (cloudSyncState.status === CloudSyncStatusEnum.Recovered) {
+      return t("header.sync.recovered");
+    }
+    if (cloudSyncState.status === CloudSyncStatusEnum.NeedsResync) {
+      return t("header.sync.needsResync");
+    }
     if (cloudSyncState.status === CloudSyncStatusEnum.Offline) {
       return t("header.sync.offline");
     }
@@ -215,6 +227,9 @@ function App() {
         onSignInWithGoogle={signInWithGoogle}
         onSignOut={signOutUser}
         cloudSyncStatusLabel={cloudSyncState.message ?? cloudSyncStatusLabel}
+        cloudSyncQueueLength={cloudSyncState.metrics.queueLength}
+        cloudSyncPendingUploads={cloudSyncState.metrics.pendingUploads}
+        cloudSyncLastAckSortKey={cloudSyncState.metrics.lastAckSortKey}
       />
 
       {!(appMode === "projects" && isProjectDetailOpen) ? (

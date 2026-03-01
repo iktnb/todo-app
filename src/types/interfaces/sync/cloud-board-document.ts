@@ -6,4 +6,6 @@ export interface CloudBoardDocument {
   updatedAt: string | null;
   clientUpdatedAt: string;
   deviceId: string;
+  cursorSortKey?: string;
+  cursorOpId?: string;
 }

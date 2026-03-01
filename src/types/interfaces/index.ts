@@ -14,3 +14,6 @@ export type { BoardStateSnapshot } from "./board-state-snapshot";
 export type { EncryptedBoardBackupPayload } from "./encrypted-board-backup-payload";
 export type { AuthUser } from "./auth/auth-user";
 export type { CloudBoardDocument } from "./sync/cloud-board-document";
+export type { CloudSyncCursor } from "./sync/cloud-sync-cursor";
+export type { CloudSyncOperation } from "./sync/cloud-sync-operation";
+export type { CloudSyncOperationPage } from "./sync/cloud-sync-operation-page";

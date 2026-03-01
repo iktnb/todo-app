@@ -41,6 +41,10 @@ export const translations: Record<SupportedLocale, Record<string, string>> = {
     "header.sync.signedOut": "Sync status: signed out",
     "header.sync.synced": "Sync status: synced",
     "header.sync.syncing": "Sync status: syncing",
+    "header.sync.reconnecting": "Sync status: reconnecting",
+    "header.sync.catchingUp": "Sync status: catching up",
+    "header.sync.recovered": "Sync status: recovered",
+    "header.sync.needsResync": "Sync status: needs resync",
     "header.sync.offline": "Sync status: offline",
     "header.sync.error": "Sync status: error",
     "header.sync.disabled": "Sync status: disabled",
@@ -275,6 +279,8 @@ export const translations: Record<SupportedLocale, Record<string, string>> = {
     "sync.error.listen": "Cloud sync listener failed.",
     "sync.error.push": "Unable to upload local changes to cloud.",
     "sync.error.offline": "You are offline. Changes will sync when online.",
+    "sync.error.resync":
+      "Cloud sync history is inconsistent. Please force a cloud resync.",
     "state.context.customDescription": "Custom context",
     "state.review.error.inbox":
       "Cannot complete review: Inbox still has unclarified items. Run Clarify first.",
@@ -334,6 +340,11 @@ export const translations: Record<SupportedLocale, Record<string, string>> = {
     "header.sync.signedOut": "Стан синхронізації: не авторизовано",
     "header.sync.synced": "Стан синхронізації: синхронізовано",
     "header.sync.syncing": "Стан синхронізації: синхронізація",
+    "header.sync.reconnecting": "Стан синхронізації: повторне підключення",
+    "header.sync.catchingUp": "Стан синхронізації: наздоганяємо зміни",
+    "header.sync.recovered": "Стан синхронізації: відновлено",
+    "header.sync.needsResync":
+      "Стан синхронізації: потрібна повна ресинхронізація",
     "header.sync.offline": "Стан синхронізації: офлайн",
     "header.sync.error": "Стан синхронізації: помилка",
     "header.sync.disabled": "Стан синхронізації: вимкнено",
@@ -576,6 +587,8 @@ export const translations: Record<SupportedLocale, Record<string, string>> = {
     "sync.error.push": "Не вдалося завантажити локальні зміни в хмару.",
     "sync.error.offline":
       "Ви офлайн. Зміни синхронізуються після відновлення мережі.",
+    "sync.error.resync":
+      "Історія хмарної синхронізації неконсистентна. Виконайте повну ресинхронізацію.",
     "state.context.customDescription": "Користувацький контекст",
     "state.review.error.inbox":
       "Не можна завершити огляд: у Вхідних є неуточнені елементи. Спочатку виконайте уточнення.",

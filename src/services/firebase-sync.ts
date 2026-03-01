@@ -1,15 +1,25 @@
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
+  startAfter,
+  limit,
+  type QueryConstraint,
   type Unsubscribe,
 } from "firebase/firestore";
 import { BOARD_SNAPSHOT_VERSION } from "../constants/storage";
 import { firebaseFirestore } from "../lib/firebase/client";
 import type { BoardStateSnapshot } from "../types/interfaces/board-state-snapshot";
 import type { CloudBoardDocument } from "../types/interfaces/sync/cloud-board-document";
+import type { CloudSyncCursor } from "../types/interfaces/sync/cloud-sync-cursor";
+import type { CloudSyncOperation } from "../types/interfaces/sync/cloud-sync-operation";
+import type { CloudSyncOperationPage } from "../types/interfaces/sync/cloud-sync-operation-page";
 
 function getBoardDocRef(uid: string) {
   if (!firebaseFirestore) {
@@ -17,6 +27,21 @@ function getBoardDocRef(uid: string) {
   }
 
   return doc(firebaseFirestore, "users", uid, "boardState", "current");
+}
+
+function getSyncOpsCollectionRef(uid: string) {
+  if (!firebaseFirestore) {
+    return null;
+  }
+  return collection(firebaseFirestore, "users", uid, "syncOps");
+}
+
+function getSyncOpDocRef(uid: string, opId: string) {
+  const syncOpsCollectionRef = getSyncOpsCollectionRef(uid);
+  if (!syncOpsCollectionRef) {
+    return null;
+  }
+  return doc(syncOpsCollectionRef, opId);
 }
 
 function isBoardSnapshot(value: unknown): value is BoardStateSnapshot {
@@ -67,6 +92,14 @@ function toCloudBoardDocument(data: unknown): CloudBoardDocument | null {
     updatedAt: "updatedAt" in data ? readUpdatedAt(data.updatedAt) : null,
     clientUpdatedAt: data.clientUpdatedAt,
     deviceId: data.deviceId,
+    cursorSortKey:
+      "cursorSortKey" in data && typeof data.cursorSortKey === "string"
+        ? data.cursorSortKey
+        : undefined,
+    cursorOpId:
+      "cursorOpId" in data && typeof data.cursorOpId === "string"
+        ? data.cursorOpId
+        : undefined,
   };
 }
 
@@ -90,6 +123,7 @@ export async function pushCloudBoardDocument(input: {
   uid: string;
   snapshot: BoardStateSnapshot;
   deviceId: string;
+  cursor?: CloudSyncCursor | null;
 }): Promise<void> {
   const boardRef = getBoardDocRef(input.uid);
   if (!boardRef) {
@@ -102,7 +136,127 @@ export async function pushCloudBoardDocument(input: {
     clientUpdatedAt: new Date().toISOString(),
     updatedAt: serverTimestamp(),
     deviceId: input.deviceId,
+    cursorSortKey: input.cursor?.sortKey ?? null,
+    cursorOpId: input.cursor?.opId ?? null,
   });
+}
+
+function isCloudSyncOperation(data: unknown): data is CloudSyncOperation {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "opId" in data &&
+    typeof data.opId === "string" &&
+    "type" in data &&
+    typeof data.type === "string" &&
+    "deviceId" in data &&
+    typeof data.deviceId === "string" &&
+    "clientSeq" in data &&
+    typeof data.clientSeq === "number" &&
+    Number.isFinite(data.clientSeq) &&
+    "clientTime" in data &&
+    typeof data.clientTime === "string" &&
+    "sortKey" in data &&
+    typeof data.sortKey === "string" &&
+    "payload" in data &&
+    isBoardSnapshot(data.payload)
+  );
+}
+
+export async function appendCloudSyncOperation(input: {
+  uid: string;
+  operation: CloudSyncOperation;
+}): Promise<void> {
+  const opRef = getSyncOpDocRef(input.uid, input.operation.opId);
+  if (!opRef) {
+    return;
+  }
+
+  await setDoc(opRef, {
+    ...input.operation,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function listCloudSyncOperationsSince(input: {
+  uid: string;
+  cursor: CloudSyncCursor | null;
+  pageSize: number;
+}): Promise<CloudSyncOperationPage> {
+  const syncOpsCollectionRef = getSyncOpsCollectionRef(input.uid);
+  if (!syncOpsCollectionRef) {
+    return {
+      operations: [],
+      nextCursor: input.cursor,
+    };
+  }
+
+  const constraints: QueryConstraint[] = [
+    orderBy("sortKey", "asc"),
+    orderBy("opId", "asc"),
+    limit(input.pageSize),
+  ];
+  if (input.cursor) {
+    constraints.splice(
+      2,
+      0,
+      startAfter(input.cursor.sortKey, input.cursor.opId),
+    );
+  }
+
+  const snapshot = await getDocs(query(syncOpsCollectionRef, ...constraints));
+  const operations: CloudSyncOperation[] = [];
+  for (const documentSnapshot of snapshot.docs) {
+    const data = documentSnapshot.data();
+    if (!isCloudSyncOperation(data)) {
+      continue;
+    }
+    operations.push(data);
+  }
+
+  const lastOperation = operations[operations.length - 1] ?? null;
+  return {
+    operations,
+    nextCursor: lastOperation
+      ? { sortKey: lastOperation.sortKey, opId: lastOperation.opId }
+      : input.cursor,
+  };
+}
+
+export function listenToCloudSyncOperationsSince(
+  uid: string,
+  cursor: CloudSyncCursor | null,
+  onChange: (operation: CloudSyncOperation) => void,
+  onError: (error: Error) => void,
+): Unsubscribe {
+  const syncOpsCollectionRef = getSyncOpsCollectionRef(uid);
+  if (!syncOpsCollectionRef) {
+    return () => {};
+  }
+
+  const constraints: QueryConstraint[] = [
+    orderBy("sortKey", "asc"),
+    orderBy("opId", "asc"),
+  ];
+  if (cursor) {
+    constraints.push(startAfter(cursor.sortKey, cursor.opId));
+  }
+
+  return onSnapshot(
+    query(syncOpsCollectionRef, ...constraints),
+    (snapshot) => {
+      for (const change of snapshot.docChanges()) {
+        if (change.type !== "added") {
+          continue;
+        }
+        const data = change.doc.data();
+        if (isCloudSyncOperation(data)) {
+          onChange(data);
+        }
+      }
+    },
+    (error) => onError(error),
+  );
 }
 
 export function listenToCloudBoardDocument(

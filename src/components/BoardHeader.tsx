@@ -23,6 +23,9 @@ interface BoardHeaderProps {
   onSignInWithGoogle: () => Promise<void>;
   onSignOut: () => Promise<void>;
   cloudSyncStatusLabel: string;
+  cloudSyncQueueLength: number;
+  cloudSyncPendingUploads: number;
+  cloudSyncLastAckSortKey: string | null;
 }
 
 export function BoardHeader({
@@ -40,6 +43,9 @@ export function BoardHeader({
   onSignInWithGoogle,
   onSignOut,
   cloudSyncStatusLabel,
+  cloudSyncQueueLength,
+  cloudSyncPendingUploads,
+  cloudSyncLastAckSortKey,
 }: BoardHeaderProps) {
   const { locale, setLocale, t } = useI18n();
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
@@ -227,6 +233,13 @@ export function BoardHeader({
                 </p>
                 <p className="mt-1 mb-0 text-xs text-cyan-200/90">
                   {cloudSyncStatusLabel}
+                </p>
+                <p className="mt-1 mb-0 text-[11px] text-slate-300">
+                  Queue: {cloudSyncQueueLength} · Pending:{" "}
+                  {cloudSyncPendingUploads}
+                </p>
+                <p className="mt-1 mb-0 truncate text-[11px] text-slate-400">
+                  Last ack: {cloudSyncLastAckSortKey ?? "-"}
                 </p>
                 {authUserLabel ? (
                   <p className="mt-1 mb-0 text-xs text-slate-300">
