@@ -15,7 +15,8 @@ jobs:
       - name: Prepare, build and deploy
         uses: iktnb/github-utils/.github/actions/prepare-and-build-for-gh-pages@v1
         with:
+          node-version: "20"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           site_url: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
           output_path: "dist"
-          build-command: "npm run deploy"
+          deploy-command: "npm run deploy"
