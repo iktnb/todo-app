@@ -68,7 +68,7 @@ export function BoardHeader({
         <h1 className="m-0 text-[clamp(1.15rem,1.7vw,1.4rem)] tracking-[0.02em] text-slate-100">
           Task Board
         </h1>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
           <span className="rounded-full border border-sky-400/45 bg-sky-400/15 px-1.5 py-0.5 text-[11px] font-semibold tracking-[0.02em] text-sky-300">
             Inbox items: {inboxItemsCount}
           </span>
@@ -76,7 +76,7 @@ export function BoardHeader({
             MVP Foundation
           </span>
           <button
-            className="cursor-pointer rounded-[9px] border border-cyan-400/50 bg-cyan-400/14 px-2.5 py-1 text-[11px] font-semibold text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
+            className="cursor-pointer rounded-[9px] border border-cyan-400/50 bg-cyan-400/14 px-2.5 py-1 text-[11px] font-semibold text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65 max-sm:whitespace-normal"
             type="button"
             onClick={() => void handleCopyBackupClick()}
             disabled={isBackupPending}
@@ -84,7 +84,7 @@ export function BoardHeader({
             Скопировать backup
           </button>
           <button
-            className="cursor-pointer rounded-[9px] border border-cyan-400/50 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 shadow-[0_0_10px_rgba(34,211,238,0.15)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
+            className="cursor-pointer rounded-[9px] border border-cyan-400/50 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 shadow-[0_0_10px_rgba(34,211,238,0.15)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65 max-sm:whitespace-normal"
             type="button"
             onClick={() => void handlePasteBackupClick()}
             disabled={isBackupPending}
@@ -92,14 +92,14 @@ export function BoardHeader({
             Вставить backup
           </button>
           <button
-            className="cursor-pointer rounded-[9px] border border-violet-400/50 bg-violet-400/14 px-2.5 py-1 text-[11px] font-semibold text-violet-200 shadow-[0_0_12px_rgba(167,139,250,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px"
+            className="cursor-pointer rounded-[9px] border border-violet-400/50 bg-violet-400/14 px-2.5 py-1 text-[11px] font-semibold text-violet-200 shadow-[0_0_12px_rgba(167,139,250,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px max-sm:whitespace-normal"
             type="button"
             onClick={onOpenGuide}
           >
             Руководство
           </button>
           <button
-            className="cursor-pointer rounded-[9px] border border-rose-400/50 bg-rose-400/14 px-2.5 py-1 text-[11px] font-semibold text-rose-200 shadow-[0_0_12px_rgba(251,113,133,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px"
+            className="cursor-pointer rounded-[9px] border border-rose-400/50 bg-rose-400/14 px-2.5 py-1 text-[11px] font-semibold text-rose-200 shadow-[0_0_12px_rgba(251,113,133,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px max-sm:whitespace-normal"
             type="button"
             onClick={handleResetClick}
           >
@@ -111,7 +111,7 @@ export function BoardHeader({
         <p className="mt-2 mb-0 text-xs text-cyan-200/90">{backupStatus}</p>
       ) : null}
       <form
-        className="mt-2 grid w-full max-w-2xl grid-cols-[1fr_auto] gap-2 mx-auto"
+        className="mx-auto mt-2 grid w-full max-w-2xl grid-cols-[1fr_auto] gap-2 max-sm:grid-cols-1"
         onSubmit={onCaptureItem}
       >
         <input
@@ -124,7 +124,7 @@ export function BoardHeader({
           aria-label="Быстрый capture item в Inbox"
         />
         <button
-          className="cursor-pointer rounded-[10px] border border-sky-400/50 bg-sky-400/12 px-3 py-2 text-sm font-semibold text-cyan-300 shadow-[0_0_14px_rgba(56,189,248,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px"
+          className="cursor-pointer rounded-[10px] border border-sky-400/50 bg-sky-400/12 px-3 py-2 text-sm font-semibold text-cyan-300 shadow-[0_0_14px_rgba(56,189,248,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px max-sm:w-full"
           type="submit"
         >
           + Inbox

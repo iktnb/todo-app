@@ -5,7 +5,7 @@ interface GuideViewProps {
 export function GuideView({ onNavigate }: GuideViewProps) {
   return (
     <section
-      className="mt-5 grid min-h-0 gap-3 overflow-y-auto pr-1"
+      className="mt-5 grid min-h-0 gap-3 overflow-y-auto pr-1 max-md:pr-0"
       aria-label="Руководство по GTD приложению"
     >
       <article className="grid gap-3 rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-4">

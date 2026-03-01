@@ -220,7 +220,7 @@ export function WeeklyReviewView({
 
   return (
     <section
-      className="mt-5 grid min-h-0 grid-rows-[auto_1fr] gap-3 overflow-y-auto pr-1"
+      className="mt-5 grid min-h-0 grid-rows-[auto_1fr] gap-3 overflow-y-auto pr-1 max-md:pr-0"
       tabIndex={0}
       onKeyDown={(event) => {
         if (!hasActiveReview) {

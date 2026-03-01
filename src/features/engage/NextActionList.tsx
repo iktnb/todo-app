@@ -28,7 +28,7 @@ export function NextActionList({
   }
 
   return (
-    <div className="grid gap-2.5">
+    <div className="grid content-start gap-2.5">
       {nextActions.map((nextAction) => {
         const context = contextsById.get(nextAction.contextId)
 

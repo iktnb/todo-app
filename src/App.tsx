@@ -144,7 +144,7 @@ function App() {
         inboxItemsCount={inboxItems.length}
       />
 
-      <section className="mt-3 flex items-center gap-1.5">
+      <section className="mt-3 flex flex-wrap items-center gap-1.5">
         <button
           className={`cursor-pointer rounded-[9px] border px-2.5 py-1 text-xs font-semibold transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px ${
             appMode === 'board'
@@ -245,7 +245,7 @@ function App() {
           />
         </section>
       ) : appMode === 'engage' ? (
-        <section className="mt-5 grid min-h-0 flex-1 grid-rows-[auto_1fr] gap-3 overflow-y-auto pr-1">
+        <section className="mt-5 grid min-h-0 flex-1 grid-rows-[auto_1fr] gap-3 overflow-y-auto pr-1 max-md:pr-0">
           <ContextFilterBar
             contexts={contexts}
             selectedContextId={selectedContextId}

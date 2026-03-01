@@ -9,6 +9,50 @@ npm install
 npm run dev
 ```
 
+## Mobile (Tauri Android / iOS)
+
+The app is already prepared for Tauri mobile entrypoint in Rust (`src-tauri/src/lib.rs`), so you can build native mobile binaries after one-time platform setup.
+
+### 1) Install mobile prerequisites
+
+For Android (Linux):
+
+- Install Android Studio (SDK + NDK)
+- Set `JAVA_HOME` (Android Studio JBR)
+- Set `ANDROID_HOME` and `NDK_HOME`
+- Ensure Rust Android targets are installed
+- iOS builds require macOS + Xcode (cannot build iOS from Linux)
+
+Example environment variables:
+
+```bash
+export JAVA_HOME=/opt/android-studio/jbr
+export ANDROID_HOME="$HOME/Android/Sdk"
+export NDK_HOME="$ANDROID_HOME/ndk/$(ls -1 "$ANDROID_HOME/ndk" | tail -n 1)"
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+```
+
+### 2) Initialize mobile projects (one time)
+
+```bash
+npm run tauri:android:init
+npm run tauri:ios:init
+```
+
+### 3) Run on device/emulator
+
+```bash
+npm run tauri:android:dev
+npm run tauri:ios:dev
+```
+
+### 4) Build release artifacts
+
+```bash
+npm run tauri:android:build
+npm run tauri:ios:build
+```
+
 ## Deploy to GitHub Pages
 
 Deployment is configured via GitHub Actions using shared action:

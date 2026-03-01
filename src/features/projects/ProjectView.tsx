@@ -84,11 +84,11 @@ export function ProjectView({
   }
 
   return (
-    <section className="mt-5 grid min-h-0 grid-rows-[auto_auto_1fr] gap-3 overflow-y-auto pr-1">
+    <section className="mt-5 grid min-h-0 grid-rows-[auto_auto_1fr] gap-3 overflow-y-auto pr-1 max-md:pr-0">
       <header className="grid gap-2 rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="m-0 text-lg text-slate-100">Project View</h2>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+          <div className="grid w-full gap-1 text-xs text-slate-300 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
             <span>Active: {activeProjectsCount}</span>
             <span>Done: {doneProjectsCount}</span>
             <span>Missing Next Action: {projectsWithoutNextActionCount}</span>
