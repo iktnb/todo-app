@@ -43,6 +43,7 @@ export function useCloudSync(input: UseCloudSyncInput): CloudSyncState {
   );
   const [message, setMessage] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [syncAttemptToken, setSyncAttemptToken] = useState(0);
   const lastUploadedHashRef = useRef<string | null>(null);
   const isApplyingRemoteUpdateRef = useRef(false);
   const isHydratedRef = useRef(false);
@@ -150,6 +151,44 @@ export function useCloudSync(input: UseCloudSyncInput): CloudSyncState {
               return;
             }
 
+            const localHash = hashBoardSnapshot(localSnapshotRef.current);
+            const hasUnsyncedLocalChanges =
+              lastUploadedHashRef.current !== null &&
+              localHash !== lastUploadedHashRef.current;
+
+            if (hasUnsyncedLocalChanges) {
+              const mergedSnapshot = mergeBoardSnapshots(
+                localSnapshotRef.current,
+                cloudDocument.snapshot,
+              );
+              const mergedHash = hashBoardSnapshot(mergedSnapshot);
+              isApplyingRemoteUpdateRef.current = true;
+              applySnapshot(mergedSnapshot);
+              setStatus(CloudSyncStatusEnum.Syncing);
+              setMessage(null);
+              void pushCloudBoardDocument({
+                uid: currentUser.uid,
+                snapshot: mergedSnapshot,
+                deviceId,
+              })
+                .then(() => {
+                  if (isCancelled) {
+                    return;
+                  }
+                  lastUploadedHashRef.current = mergedHash;
+                  setStatus(CloudSyncStatusEnum.Synced);
+                  setLastSyncedAt(new Date().toISOString());
+                })
+                .catch(() => {
+                  if (isCancelled) {
+                    return;
+                  }
+                  setStatus(CloudSyncStatusEnum.Error);
+                  setMessage(t("sync.error.push"));
+                });
+              return;
+            }
+
             isApplyingRemoteUpdateRef.current = true;
             applySnapshot(cloudDocument.snapshot);
             lastUploadedHashRef.current = nextHash;
@@ -232,7 +271,7 @@ export function useCloudSync(input: UseCloudSyncInput): CloudSyncState {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [deviceId, localSnapshot, t, user]);
+  }, [deviceId, localSnapshot, syncAttemptToken, t, user]);
 
   useEffect(() => {
     if (!CLOUD_SYNC_ENABLED || !user) {
@@ -242,6 +281,19 @@ export function useCloudSync(input: UseCloudSyncInput): CloudSyncState {
     function handleOnlineStatus() {
       if (!navigator.onLine) {
         setStatus(CloudSyncStatusEnum.Offline);
+        setMessage(t("sync.error.offline"));
+        return;
+      }
+
+      const localHash = hashBoardSnapshot(localSnapshotRef.current);
+      const hasUnsyncedLocalChanges =
+        lastUploadedHashRef.current !== null &&
+        localHash !== lastUploadedHashRef.current;
+
+      if (hasUnsyncedLocalChanges) {
+        setStatus(CloudSyncStatusEnum.Syncing);
+        setMessage(null);
+        setSyncAttemptToken((currentToken) => currentToken + 1);
         return;
       }
 
@@ -256,7 +308,7 @@ export function useCloudSync(input: UseCloudSyncInput): CloudSyncState {
       window.removeEventListener("online", handleOnlineStatus);
       window.removeEventListener("offline", handleOnlineStatus);
     };
-  }, [user]);
+  }, [t, user]);
 
   return {
     status: !CLOUD_SYNC_ENABLED
