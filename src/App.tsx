@@ -18,6 +18,7 @@ import { cloudSyncStore } from "./sync/op-queue/indexeddb-cloud-sync-store";
 import { CloudSyncStatusEnum, TaskStatusEnum } from "./types/enums";
 import {
   ClarifyOutcomeEnum,
+  Item,
   NextActionStatusEnum,
   ProjectStatusEnum,
   TrashReasonEnum,
@@ -398,7 +399,7 @@ function App() {
               onClick={() => setAppMode("board")}
               aria-pressed={appMode === "board"}
             >
-              {t("app.modes.board", { count: inboxItems.length })}
+              {t("app.modes.board", { count: inboxItems.filter((item: Item) => !item.clarified).length })}
             </button>
             <button
               className={modeButtonClass("engage")}

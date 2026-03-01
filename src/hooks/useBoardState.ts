@@ -12,6 +12,29 @@ import {
   decryptBackupPayload,
   encryptBackupPayload,
 } from "../utils/board-backup-crypto";
+import {
+  findBlockingProjectByNextAction as findBlockingProjectByNextActionGuard,
+  countActiveProjectActions as countActiveProjectActionsGuard,
+} from "./use-board-state/domain/project-invariants";
+import {
+  selectDashboardActivityByDate,
+  selectInboxItems,
+  selectInboxTasks,
+  selectProjectHealthById,
+  selectWaitingInboxTasks,
+} from "./use-board-state/selectors/derived-data";
+import {
+  mapLegacyTasksToItems as mapLegacyTasksToItemsHelper,
+  normalizeColumnsAndTasks as normalizeColumnsAndTasksHelper,
+  normalizeDashboardLayout as normalizeDashboardLayoutHelper,
+} from "./use-board-state/storage/load-and-migrate";
+import {
+  isBoardDashboardLayout as isBoardDashboardLayoutGuard,
+  isCompletionCountsByDate as isCompletionCountsByDateGuard,
+  isHeatmapSensitivity as isHeatmapSensitivityGuard,
+} from "./use-board-state/validation/entity-guards";
+import { toBoardCoreState } from "../store/board-store.persistence";
+import { useBoardStore } from "../store/board-store";
 import { TaskStatusEnum } from "../types/board";
 import type { Column, Task, TaskStatus } from "../types/board";
 import {
@@ -31,7 +54,6 @@ import type {
   NextActionEnergy,
   NextActionStatus,
   Project,
-  ProjectHealth,
   ProjectStatus,
   SomedayItem,
   WeeklyReviewSnapshot,
@@ -50,7 +72,10 @@ import type {
   BoardStateSnapshot,
   LegacyBoardStateSnapshot,
 } from "../types/storage";
-import type { BoardDashboardLayout } from "../types/interfaces/ui";
+import type {
+  BackupActionResult,
+  BoardDashboardLayout,
+} from "../types/interfaces/ui";
 
 interface BoardState {
   columns: Column[];
@@ -70,11 +95,6 @@ interface BoardState {
   completionCountsByDate: Record<string, number>;
   dashboardLayout: BoardDashboardLayout;
   heatmapSensitivity: HeatmapSensitivity;
-}
-
-interface BackupActionResult {
-  ok: boolean;
-  message: string;
 }
 
 const TASK_STATUSES: TaskStatus[] = [
@@ -133,11 +153,7 @@ function countActiveProjectActions(
   nextActions: NextAction[],
   projectId: string,
 ): number {
-  return nextActions.filter(
-    (nextAction) =>
-      nextAction.projectId === projectId &&
-      nextAction.status === NextActionStatusEnum.Active,
-  ).length;
+  return countActiveProjectActionsGuard(nextActions, projectId);
 }
 
 function isColumn(value: unknown): value is Column {
@@ -382,73 +398,28 @@ function isWeeklyReviewSnapshot(value: unknown): value is WeeklyReviewSnapshot {
   );
 }
 
-function isBoardDashboardWidgetType(
-  value: unknown,
-): value is BoardDashboardWidgetType {
-  return (
-    typeof value === "string" &&
-    DASHBOARD_WIDGET_ORDER_DEFAULT.includes(value as BoardDashboardWidgetType)
-  );
-}
-
 function isHeatmapSensitivity(value: unknown): value is HeatmapSensitivity {
-  return (
-    typeof value === "string" &&
-    HEATMAP_SENSITIVITIES.includes(value as HeatmapSensitivity)
-  );
+  return isHeatmapSensitivityGuard(value, HEATMAP_SENSITIVITIES);
 }
 
 function isBoardDashboardLayout(value: unknown): value is BoardDashboardLayout {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "widgetOrder" in value &&
-    Array.isArray(value.widgetOrder) &&
-    value.widgetOrder.every((widgetType) =>
-      isBoardDashboardWidgetType(widgetType),
-    ) &&
-    "hiddenWidgets" in value &&
-    Array.isArray(value.hiddenWidgets) &&
-    value.hiddenWidgets.every((widgetType) =>
-      isBoardDashboardWidgetType(widgetType),
-    )
+  return isBoardDashboardLayoutGuard(
+    value,
+    DASHBOARD_WIDGET_ORDER_DEFAULT,
   );
 }
 
 function isCompletionCountsByDate(
   value: unknown,
 ): value is Record<string, number> {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  return Object.entries(value).every(
-    ([key, dayCount]) =>
-      typeof key === "string" &&
-      /^\d{4}-\d{2}-\d{2}$/.test(key) &&
-      typeof dayCount === "number" &&
-      Number.isFinite(dayCount) &&
-      dayCount >= 0,
-  );
+  return isCompletionCountsByDateGuard(value);
 }
 
 function normalizeDashboardLayout(layout: BoardDashboardLayout): BoardDashboardLayout {
-  const hiddenSet = new Set(layout.hiddenWidgets);
-  const orderWithoutUnknowns = layout.widgetOrder.filter((widgetType) =>
-    DASHBOARD_WIDGET_ORDER_DEFAULT.includes(widgetType),
-  );
-  const completedOrder = [
-    ...orderWithoutUnknowns,
-    ...DASHBOARD_WIDGET_ORDER_DEFAULT.filter(
-      (widgetType) => !orderWithoutUnknowns.includes(widgetType),
-    ),
-  ];
-
-  return {
-    widgetOrder: completedOrder,
-    hiddenWidgets: completedOrder.filter((widgetType) =>
-      hiddenSet.has(widgetType),
-    ),
-  };
+  return normalizeDashboardLayoutHelper({
+    layout,
+    defaultOrder: DASHBOARD_WIDGET_ORDER_DEFAULT,
+  });
 }
 
 function isLegacyBoardStateSnapshot(
@@ -882,34 +853,11 @@ function createDefaultBoardState(defaultContexts: Context[]): BoardState {
 }
 
 function normalizeColumnsAndTasks(columns: Column[], tasks: Task[]) {
-  const inboxColumn =
-    columns.find((column) => column.id === INBOX_COLUMN.id) ?? INBOX_COLUMN;
-  const customColumns = columns.filter(
-    (column) => column.id !== INBOX_COLUMN.id,
-  );
-  const normalizedColumns = [inboxColumn, ...customColumns];
-  const existingColumnIds = new Set(
-    normalizedColumns.map((column) => column.id),
-  );
-  const normalizedTasks = tasks.filter((task) =>
-    existingColumnIds.has(task.columnId),
-  );
-
-  return {
-    columns: normalizedColumns,
-    tasks: normalizedTasks,
-  };
+  return normalizeColumnsAndTasksHelper(columns, tasks);
 }
 
 function mapLegacyTasksToItems(tasks: Task[]): Item[] {
-  return tasks.map((task) => ({
-    id: task.id,
-    title: task.title,
-    notes: "",
-    createdAt: task.createdAt,
-    source: "legacy",
-    clarified: false,
-  }));
+  return mapLegacyTasksToItemsHelper(tasks);
 }
 
 function loadBoardStateFromStorage(defaultContexts: Context[]): BoardState {
@@ -1072,50 +1020,60 @@ export function useBoardState() {
     () => loadBoardStateFromStorage(defaultContexts),
     [defaultContexts],
   );
-  const [columns, setColumns] = useState<Column[]>(initialBoardState.columns);
-  const [tasks, setTasks] = useState<Task[]>(initialBoardState.tasks);
-  const [items, setItems] = useState<Item[]>(initialBoardState.items);
-  const [nextActions, setNextActions] = useState<NextAction[]>(
-    initialBoardState.nextActions,
+  const hydrateBoardStore = useBoardStore((state) => state.hydrate);
+  const columns = useBoardStore((state) => state.columns);
+  const setColumns = useBoardStore((state) => state.setColumns);
+  const tasks = useBoardStore((state) => state.tasks);
+  const setTasks = useBoardStore((state) => state.setTasks);
+  const items = useBoardStore((state) => state.items);
+  const setItems = useBoardStore((state) => state.setItems);
+  const nextActions = useBoardStore((state) => state.nextActions);
+  const setNextActions = useBoardStore((state) => state.setNextActions);
+  const projects = useBoardStore((state) => state.projects);
+  const setProjects = useBoardStore((state) => state.setProjects);
+  const somedayItems = useBoardStore((state) => state.somedayItems);
+  const setSomedayItems = useBoardStore((state) => state.setSomedayItems);
+  const contexts = useBoardStore((state) => state.contexts);
+  const setContexts = useBoardStore((state) => state.setContexts);
+  const selectedContextId = useBoardStore((state) => state.selectedContextId);
+  const setSelectedContextId = useBoardStore((state) => state.setSelectedContextId);
+  const legacyTaskIds = useBoardStore((state) => state.legacyTaskIds);
+  const setLegacyTaskIds = useBoardStore((state) => state.setLegacyTaskIds);
+  const isMigratedFromLegacy = useBoardStore(
+    (state) => state.isMigratedFromLegacy,
   );
-  const [projects, setProjects] = useState<Project[]>(
-    initialBoardState.projects,
+  const setIsMigratedFromLegacy = useBoardStore(
+    (state) => state.setIsMigratedFromLegacy,
   );
-  const [somedayItems, setSomedayItems] = useState<SomedayItem[]>(
-    initialBoardState.somedayItems,
+  const currentReviewStep = useBoardStore((state) => state.currentReviewStep);
+  const setCurrentReviewStep = useBoardStore((state) => state.setCurrentReviewStep);
+  const weeklyReviewStartedAt = useBoardStore(
+    (state) => state.weeklyReviewStartedAt,
   );
-  const [contexts, setContexts] = useState<Context[]>(
-    initialBoardState.contexts,
+  const setWeeklyReviewStartedAt = useBoardStore(
+    (state) => state.setWeeklyReviewStartedAt,
   );
-  const [selectedContextId, setSelectedContextId] = useState<string | null>(
-    initialBoardState.selectedContextId,
+  const weeklyReviewNote = useBoardStore((state) => state.weeklyReviewNote);
+  const setWeeklyReviewNote = useBoardStore((state) => state.setWeeklyReviewNote);
+  const reviewHistory = useBoardStore((state) => state.reviewHistory);
+  const setReviewHistory = useBoardStore((state) => state.setReviewHistory);
+  const completionCountsByDate = useBoardStore(
+    (state) => state.completionCountsByDate,
   );
-  const [legacyTaskIds, setLegacyTaskIds] = useState<string[]>(
-    initialBoardState.legacyTaskIds,
+  const setCompletionCountsByDate = useBoardStore(
+    (state) => state.setCompletionCountsByDate,
   );
-  const [isMigratedFromLegacy, setIsMigratedFromLegacy] = useState<boolean>(
-    initialBoardState.isMigratedFromLegacy,
+  const dashboardLayout = useBoardStore((state) => state.dashboardLayout);
+  const setDashboardLayout = useBoardStore((state) => state.setDashboardLayout);
+  const heatmapSensitivity = useBoardStore((state) => state.heatmapSensitivity);
+  const setHeatmapSensitivity = useBoardStore(
+    (state) => state.setHeatmapSensitivity,
   );
-  const [currentReviewStep, setCurrentReviewStep] = useState<number>(
-    initialBoardState.currentReviewStep,
-  );
-  const [weeklyReviewStartedAt, setWeeklyReviewStartedAt] = useState<
-    string | null
-  >(initialBoardState.weeklyReviewStartedAt);
-  const [weeklyReviewNote, setWeeklyReviewNote] = useState<string>(
-    initialBoardState.weeklyReviewNote,
-  );
-  const [reviewHistory, setReviewHistory] = useState<WeeklyReviewSnapshot[]>(
-    initialBoardState.reviewHistory,
-  );
-  const [completionCountsByDate, setCompletionCountsByDate] = useState<
-    Record<string, number>
-  >(initialBoardState.completionCountsByDate);
-  const [dashboardLayout, setDashboardLayout] = useState<BoardDashboardLayout>(
-    initialBoardState.dashboardLayout,
-  );
-  const [heatmapSensitivity, setHeatmapSensitivity] =
-    useState<HeatmapSensitivity>(initialBoardState.heatmapSensitivity);
+  const isStoreHydratedRef = useRef(false);
+  if (!isStoreHydratedRef.current) {
+    hydrateBoardStore(toBoardCoreState(initialBoardState));
+    isStoreHydratedRef.current = true;
+  }
   const [weeklyReviewError, setWeeklyReviewError] = useState<string | null>(
     null,
   );
@@ -1216,7 +1174,26 @@ export function useBoardState() {
       setWeeklyReviewError(null);
       setProjectInvariantWarning(null);
     },
-    [defaultContexts],
+    [
+      defaultContexts,
+      setColumns,
+      setCompletionCountsByDate,
+      setContexts,
+      setCurrentReviewStep,
+      setDashboardLayout,
+      setHeatmapSensitivity,
+      setIsMigratedFromLegacy,
+      setItems,
+      setLegacyTaskIds,
+      setNextActions,
+      setProjects,
+      setReviewHistory,
+      setSelectedContextId,
+      setSomedayItems,
+      setTasks,
+      setWeeklyReviewNote,
+      setWeeklyReviewStartedAt,
+    ],
   );
 
   useEffect(() => {
@@ -1247,34 +1224,11 @@ export function useBoardState() {
     nextActionId: string,
     sourceNextActions: NextAction[],
   ): Project | null {
-    const nextAction = sourceNextActions.find(
-      (currentAction) => currentAction.id === nextActionId,
-    );
-    if (
-      !nextAction ||
-      nextAction.status !== NextActionStatusEnum.Active ||
-      !nextAction.projectId
-    ) {
-      return null;
-    }
-
-    const relatedProject = projects.find(
-      (project) => project.id === nextAction.projectId,
-    );
-    if (!relatedProject || relatedProject.status !== ProjectStatusEnum.Active) {
-      return null;
-    }
-
-    const activeProjectActionsCount = countActiveProjectActions(
+    return findBlockingProjectByNextActionGuard({
+      nextActionId,
       sourceNextActions,
-      relatedProject.id,
-    );
-
-    if (activeProjectActionsCount > 1) {
-      return null;
-    }
-
-    return relatedProject;
+      projects,
+    });
   }
 
   function handleCaptureItem(event: FormEvent<HTMLFormElement>) {
@@ -2383,73 +2337,15 @@ export function useBoardState() {
     [clarifyTargetItemId, items],
   );
   const inboxItems = useMemo(
-    () =>
-      items
-        .filter((item) => !item.clarified)
-        .sort((firstItem, secondItem) => {
-          const firstCreatedAt = new Date(firstItem.createdAt).getTime();
-          const secondCreatedAt = new Date(secondItem.createdAt).getTime();
-
-          return secondCreatedAt - firstCreatedAt;
-        }),
+    () => selectInboxItems(items),
     [items],
   );
   const inboxTasks = useMemo(
-    () =>
-      tasks
-        .filter((task) => {
-          if (task.columnId !== INBOX_COLUMN.id) {
-            return false;
-          }
-          if (task.status === TaskStatusEnum.Waiting) {
-            return false;
-          }
-
-          const relatedItem = itemById.get(task.id);
-          return relatedItem === undefined || !relatedItem.clarified;
-        })
-        .sort((firstTask, secondTask) => {
-          const firstCreatedAt = new Date(firstTask.createdAt).getTime();
-          const secondCreatedAt = new Date(secondTask.createdAt).getTime();
-
-          return secondCreatedAt - firstCreatedAt;
-        }),
+    () => selectInboxTasks(tasks, itemById),
     [tasks, itemById],
   );
   const waitingInboxTasks = useMemo(
-    () =>
-      tasks
-        .filter((task) => {
-          if (task.columnId !== INBOX_COLUMN.id) {
-            return false;
-          }
-          if (task.status !== TaskStatusEnum.Waiting) {
-            return false;
-          }
-
-          const relatedItem = itemById.get(task.id);
-          return relatedItem === undefined || !relatedItem.clarified;
-        })
-        .sort((firstTask, secondTask) => {
-          const firstDeadline = new Date(firstTask.waitingDeadline ?? "").getTime();
-          const secondDeadline = new Date(secondTask.waitingDeadline ?? "").getTime();
-          const firstIsInvalid = Number.isNaN(firstDeadline);
-          const secondIsInvalid = Number.isNaN(secondDeadline);
-
-          if (firstIsInvalid && secondIsInvalid) {
-            return (
-              new Date(secondTask.createdAt).getTime() -
-              new Date(firstTask.createdAt).getTime()
-            );
-          }
-          if (firstIsInvalid) {
-            return 1;
-          }
-          if (secondIsInvalid) {
-            return -1;
-          }
-          return firstDeadline - secondDeadline;
-        }),
+    () => selectWaitingInboxTasks(tasks, itemById),
     [tasks, itemById],
   );
   const activeNextActions = useMemo(
@@ -2480,25 +2376,10 @@ export function useBoardState() {
       projects.filter((project) => project.status === ProjectStatusEnum.Active),
     [projects],
   );
-  const projectHealthById = useMemo(() => {
-    const healthById: Record<string, ProjectHealth> = {};
-    for (const project of projects) {
-      if (project.status !== ProjectStatusEnum.Active) {
-        healthById[project.id] = ProjectHealthEnum.Healthy;
-        continue;
-      }
-
-      const activeProjectActionsCount = countActiveProjectActions(
-        nextActions,
-        project.id,
-      );
-      healthById[project.id] =
-        activeProjectActionsCount > 0
-          ? ProjectHealthEnum.Healthy
-          : ProjectHealthEnum.MissingNextAction;
-    }
-    return healthById;
-  }, [projects, nextActions]);
+  const projectHealthById = useMemo(
+    () => selectProjectHealthById(projects, nextActions),
+    [projects, nextActions],
+  );
   const projectsWithoutNextAction = useMemo(
     () =>
       projects.filter(
@@ -2558,32 +2439,16 @@ export function useBoardState() {
       waitingInboxTasks.length,
     ],
   );
-  const dashboardActivityByDate = useMemo(() => {
-    if (Object.keys(completionCountsByDate).length > 0) {
-      return completionCountsByDate;
-    }
-
-    const byDate: Record<string, number> = {};
-    const allCompletedAtValues = [
-      ...tasks
-        .filter((task) => task.status === TaskStatusEnum.Done)
-        .map((task) => task.completedAt)
-        .filter((completedAt): completedAt is string => !!completedAt),
-      ...nextActions
-        .filter((nextAction) => nextAction.status === NextActionStatusEnum.Done)
-        .map((nextAction) => nextAction.completedAt)
-        .filter((completedAt): completedAt is string => !!completedAt),
-      ...projects
-        .filter((project) => project.status === ProjectStatusEnum.Done)
-        .map((project) => project.completedAt)
-        .filter((completedAt): completedAt is string => !!completedAt),
-    ];
-    for (const completedAt of allCompletedAtValues) {
-      const dayKey = completedAt.slice(0, 10);
-      byDate[dayKey] = (byDate[dayKey] ?? 0) + 1;
-    }
-    return byDate;
-  }, [completionCountsByDate, nextActions, projects, tasks]);
+  const dashboardActivityByDate = useMemo(
+    () =>
+      selectDashboardActivityByDate({
+        completionCountsByDate,
+        tasks,
+        nextActions,
+        projects,
+      }),
+    [completionCountsByDate, nextActions, projects, tasks],
+  );
   const isReviewCompleteBlocked =
     reviewCounters.inboxUnclarified > 0 ||
     reviewCounters.projectsMissingActions > 0;
