@@ -18,4 +18,4 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           site_url: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
           output_path: "dist"
-          build-command: "npm run build"
+          build-command: "npm run deploy"
