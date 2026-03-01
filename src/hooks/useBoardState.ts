@@ -98,6 +98,15 @@ function isTaskStatus(value: unknown): value is TaskStatus {
 }
 
 function isTask(value: unknown): value is Task {
+  const waitingFor =
+    typeof value === 'object' && value !== null
+      ? (value as { waitingFor?: unknown }).waitingFor
+      : undefined
+  const waitingDeadline =
+    typeof value === 'object' && value !== null
+      ? (value as { waitingDeadline?: unknown }).waitingDeadline
+      : undefined
+
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -110,16 +119,16 @@ function isTask(value: unknown): value is Task {
     'status' in value &&
     isTaskStatus(value.status) &&
     (!('waitingFor' in value) ||
-      value.waitingFor === undefined ||
-      (typeof value.waitingFor === 'string' && value.waitingFor.trim().length > 0)) &&
+      waitingFor === undefined ||
+      (typeof waitingFor === 'string' && waitingFor.trim().length > 0)) &&
     (!('waitingDeadline' in value) ||
-      value.waitingDeadline === undefined ||
-      (typeof value.waitingDeadline === 'string' && value.waitingDeadline.trim().length > 0)) &&
+      waitingDeadline === undefined ||
+      (typeof waitingDeadline === 'string' && waitingDeadline.trim().length > 0)) &&
     (value.status !== 'waiting' ||
-      (typeof value.waitingFor === 'string' &&
-        value.waitingFor.trim().length > 0 &&
-        typeof value.waitingDeadline === 'string' &&
-        value.waitingDeadline.trim().length > 0)) &&
+      (typeof waitingFor === 'string' &&
+        waitingFor.trim().length > 0 &&
+        typeof waitingDeadline === 'string' &&
+        waitingDeadline.trim().length > 0)) &&
     'createdAt' in value &&
     typeof value.createdAt === 'string'
   )
