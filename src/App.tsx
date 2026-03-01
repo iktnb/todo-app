@@ -67,6 +67,8 @@ function App() {
     updateWeeklyReviewNote,
     completeWeeklyReview,
     handleResetLocalData,
+    handleCopyEncryptedBackup,
+    handleImportEncryptedBackup,
     handleDragStart,
     handleDragEnd,
     handleColumnDragOver,
@@ -134,6 +136,8 @@ function App() {
       <BoardHeader
         onResetLocalData={handleResetLocalData}
         onOpenGuide={() => setAppMode('guide')}
+        onCopyEncryptedBackup={handleCopyEncryptedBackup}
+        onImportEncryptedBackup={handleImportEncryptedBackup}
         taskInput={taskInput}
         setTaskInput={setTaskInput}
         onCaptureItem={handleCaptureItem}

@@ -1,9 +1,17 @@
+import { useState } from 'react'
 import type { Dispatch, FormEvent, SetStateAction } from 'react'
 import { ITEM_TITLE_MAX_LENGTH } from '../constants/validation'
+
+interface BackupActionResult {
+  ok: boolean
+  message: string
+}
 
 interface BoardHeaderProps {
   onResetLocalData: () => void
   onOpenGuide: () => void
+  onCopyEncryptedBackup: () => Promise<BackupActionResult>
+  onImportEncryptedBackup: (serialized: string) => Promise<BackupActionResult>
   taskInput: string
   setTaskInput: Dispatch<SetStateAction<string>>
   onCaptureItem: (event: FormEvent<HTMLFormElement>) => void
@@ -13,11 +21,16 @@ interface BoardHeaderProps {
 export function BoardHeader({
   onResetLocalData,
   onOpenGuide,
+  onCopyEncryptedBackup,
+  onImportEncryptedBackup,
   taskInput,
   setTaskInput,
   onCaptureItem,
   inboxItemsCount,
 }: BoardHeaderProps) {
+  const [backupStatus, setBackupStatus] = useState<string | null>(null)
+  const [isBackupPending, setIsBackupPending] = useState(false)
+
   function handleResetClick() {
     const shouldReset = window.confirm(
       'Сбросить локальные данные доски? Это удалит все пользовательские столбики и задачи.',
@@ -28,6 +41,25 @@ export function BoardHeader({
     }
 
     onResetLocalData()
+  }
+
+  async function handleCopyBackupClick() {
+    setIsBackupPending(true)
+    const result = await onCopyEncryptedBackup()
+    setBackupStatus(result.message)
+    setIsBackupPending(false)
+  }
+
+  async function handlePasteBackupClick() {
+    const backupText = window.prompt('Вставьте зашифрованный backup состояния:')
+    if (backupText === null) {
+      return
+    }
+
+    setIsBackupPending(true)
+    const result = await onImportEncryptedBackup(backupText)
+    setBackupStatus(result.message)
+    setIsBackupPending(false)
   }
 
   return (
@@ -44,6 +76,22 @@ export function BoardHeader({
             MVP Foundation
           </span>
           <button
+            className="cursor-pointer rounded-[9px] border border-cyan-400/50 bg-cyan-400/14 px-2.5 py-1 text-[11px] font-semibold text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
+            type="button"
+            onClick={() => void handleCopyBackupClick()}
+            disabled={isBackupPending}
+          >
+            Скопировать backup
+          </button>
+          <button
+            className="cursor-pointer rounded-[9px] border border-cyan-400/50 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 shadow-[0_0_10px_rgba(34,211,238,0.15)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
+            type="button"
+            onClick={() => void handlePasteBackupClick()}
+            disabled={isBackupPending}
+          >
+            Вставить backup
+          </button>
+          <button
             className="cursor-pointer rounded-[9px] border border-violet-400/50 bg-violet-400/14 px-2.5 py-1 text-[11px] font-semibold text-violet-200 shadow-[0_0_12px_rgba(167,139,250,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px"
             type="button"
             onClick={onOpenGuide}
@@ -59,6 +107,9 @@ export function BoardHeader({
           </button>
         </div>
       </div>
+      {backupStatus ? (
+        <p className="mt-2 mb-0 text-xs text-cyan-200/90">{backupStatus}</p>
+      ) : null}
       <form
         className="mt-2 grid w-full max-w-2xl grid-cols-[1fr_auto] gap-2 mx-auto"
         onSubmit={onCaptureItem}

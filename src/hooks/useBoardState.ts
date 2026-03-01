@@ -4,6 +4,7 @@ import { INBOX_COLUMN } from '../constants/board'
 import { DEFAULT_CONTEXTS } from '../constants/contexts'
 import { BOARD_SNAPSHOT_VERSION, BOARD_STORAGE_KEY } from '../constants/storage'
 import { ITEM_TITLE_MAX_LENGTH } from '../constants/validation'
+import { decryptBackupPayload, encryptBackupPayload } from '../utils/board-backup-crypto'
 import type { Column, Task, TaskStatus } from '../types/board'
 import type {
   ClarifyDecisionState,
@@ -38,6 +39,11 @@ interface BoardState {
   weeklyReviewStartedAt: string | null
   weeklyReviewNote: string
   reviewHistory: WeeklyReviewSnapshot[]
+}
+
+interface BackupActionResult {
+  ok: boolean
+  message: string
 }
 
 const DEFAULT_BOARD_STATE: BoardState = {
@@ -656,6 +662,26 @@ export function useBoardState() {
   )
   const lastCaptureRef = useRef<{ title: string; timestamp: number } | null>(null)
 
+  function buildSnapshot(): BoardStateSnapshot {
+    return {
+      version: BOARD_SNAPSHOT_VERSION,
+      columns,
+      tasks,
+      items,
+      nextActions,
+      projects,
+      somedayItems,
+      contexts,
+      selectedContextId,
+      legacyTaskIds,
+      isMigratedFromLegacy,
+      currentReviewStep,
+      weeklyReviewStartedAt,
+      weeklyReviewNote,
+      reviewHistory,
+    }
+  }
+
   useEffect(() => {
     const snapshot: BoardStateSnapshot = {
       version: BOARD_SNAPSHOT_VERSION,
@@ -877,6 +903,61 @@ export function useBoardState() {
     setClarifyResult(null)
     setClarifyHistory([])
     setProjectInvariantWarning(null)
+  }
+
+  async function handleCopyEncryptedBackup(): Promise<BackupActionResult> {
+    try {
+      const encrypted = await encryptBackupPayload(buildSnapshot())
+      await navigator.clipboard.writeText(encrypted)
+      return {
+        ok: true,
+        message: 'Зашифрованный backup скопирован в буфер обмена.',
+      }
+    } catch {
+      return {
+        ok: false,
+        message: 'Не удалось скопировать backup. Проверьте доступ к буферу обмена.',
+      }
+    }
+  }
+
+  async function handleImportEncryptedBackup(serialized: string): Promise<BackupActionResult> {
+    const normalized = serialized.trim()
+    if (!normalized) {
+      return {
+        ok: false,
+        message: 'Строка backup пустая.',
+      }
+    }
+
+    try {
+      const parsedSnapshot = await decryptBackupPayload(normalized)
+      const isKnownSnapshotShape =
+        isBoardStateSnapshot(parsedSnapshot) ||
+        isBoardStateSnapshotV4(parsedSnapshot) ||
+        isBoardStateSnapshotV3(parsedSnapshot) ||
+        isBoardStateSnapshotV2(parsedSnapshot) ||
+        isLegacyBoardStateSnapshot(parsedSnapshot)
+
+      if (!isKnownSnapshotShape) {
+        return {
+          ok: false,
+          message: 'Backup поврежден или имеет неподдерживаемый формат.',
+        }
+      }
+
+      localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(parsedSnapshot))
+      window.location.reload()
+      return {
+        ok: true,
+        message: 'Backup успешно импортирован.',
+      }
+    } catch {
+      return {
+        ok: false,
+        message: 'Не удалось расшифровать backup. Проверьте корректность строки.',
+      }
+    }
   }
 
   function handleDragStart(taskId: string) {
@@ -1552,6 +1633,8 @@ export function useBoardState() {
     updateWeeklyReviewNote,
     completeWeeklyReview,
     handleResetLocalData,
+    handleCopyEncryptedBackup,
+    handleImportEncryptedBackup,
     handleDragStart,
     handleDragEnd,
     handleColumnDragOver,
