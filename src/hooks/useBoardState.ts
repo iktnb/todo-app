@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { DragEvent, FormEvent } from 'react'
 import { INBOX_COLUMN } from '../constants/board'
-import type { Column, Task } from '../types/board'
+import type { Column, Task, TaskStatus } from '../types/board'
 
 export function useBoardState() {
   const [columns, setColumns] = useState<Column[]>([INBOX_COLUMN])
@@ -23,7 +23,8 @@ export function useBoardState() {
       id: crypto.randomUUID(),
       title,
       columnId: INBOX_COLUMN.id,
-      completed: false,
+      status: 'todo',
+      createdAt: new Date().toISOString(),
     }
 
     setTasks((currentTasks) => [...currentTasks, newTask])
@@ -59,10 +60,10 @@ export function useBoardState() {
     setColumnInput('')
   }
 
-  function handleToggleTask(taskId: string) {
+  function handleSetTaskStatus(taskId: string, nextStatus: TaskStatus) {
     setTasks((currentTasks) =>
       currentTasks.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task,
+        task.id === taskId ? { ...task, status: nextStatus } : task,
       ),
     )
   }
@@ -134,7 +135,7 @@ export function useBoardState() {
     setColumnInput,
     handleAddTask,
     handleAddColumn,
-    handleToggleTask,
+    handleSetTaskStatus,
     handleMoveTask,
     handleDeleteTask,
     handleDragStart,

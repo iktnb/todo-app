@@ -3,9 +3,12 @@ export interface Column {
   title: string
 }
 
+export type TaskStatus = 'todo' | 'in_progress' | 'done'
+
 export interface Task {
   id: string
   title: string
   columnId: string
-  completed: boolean
+  status: TaskStatus
+  createdAt: string
 }

@@ -3,7 +3,6 @@ import { BoardHeader } from './components/BoardHeader'
 import { CreateColumnCard } from './components/CreateColumnCard'
 import { INBOX_COLUMN } from './constants/board'
 import { useBoardState } from './hooks/useBoardState'
-import './App.css'
 
 function App() {
   const {
@@ -17,7 +16,7 @@ function App() {
     setColumnInput,
     handleAddTask,
     handleAddColumn,
-    handleToggleTask,
+    handleSetTaskStatus,
     handleMoveTask,
     handleDeleteTask,
     handleDragStart,
@@ -28,10 +27,13 @@ function App() {
   } = useBoardState()
 
   return (
-    <main className="board-app">
+    <main className="grid h-full w-full grid-rows-[auto_1fr] overflow-hidden p-6 max-md:p-4">
       <BoardHeader />
 
-      <section className="board-columns" aria-label="Столбики задач">
+      <section
+        className="mt-5 flex items-stretch gap-4 overflow-x-auto overflow-y-hidden px-1 pt-0.5 pb-2 max-md:mt-3.5 max-md:gap-3"
+        aria-label="Столбики задач"
+      >
         {orderedColumns.map((column) => (
           <BoardColumn
             key={column.id}
@@ -43,7 +45,7 @@ function App() {
             taskInput={taskInput}
             setTaskInput={setTaskInput}
             onAddTask={handleAddTask}
-            onToggleTask={handleToggleTask}
+            onSetTaskStatus={handleSetTaskStatus}
             onMoveTask={handleMoveTask}
             onDeleteTask={handleDeleteTask}
             onDragStart={handleDragStart}
