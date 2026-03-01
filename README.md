@@ -17,7 +17,7 @@ npm run dev
 cp .env.example .env
 ```
 
-2. Set Firebase values in `.env` and enable flag:
+1. Set Firebase values in `.env` and enable flag:
 
 ```bash
 VITE_CLOUD_SYNC_ENABLED=true
@@ -29,9 +29,14 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 ```
 
-3. Deploy Firestore rules from `firestore.rules`.
+1. Deploy Firestore rules from `firestore.rules`.
 
-4. Run smoke checks from `docs/cloud-sync-smoke-checklist.md`.
+1. Run smoke checks from `docs/cloud-sync-smoke-checklist.md`.
+
+Notes:
+
+- In local Vite dev mode, cloud sync uses Firestore path `users_dev/{uid}/...`.
+- In production build, cloud sync uses `users/{uid}/...`.
 
 ## Mobile (Tauri Android / iOS)
 

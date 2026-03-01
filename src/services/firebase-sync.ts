@@ -1,5 +1,9 @@
 import {
+  FIREBASE_USERS_COLLECTION,
+} from "../constants/firebase";
+import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -26,14 +30,20 @@ function getBoardDocRef(uid: string) {
     return null;
   }
 
-  return doc(firebaseFirestore, "users", uid, "boardState", "current");
+  return doc(
+    firebaseFirestore,
+    FIREBASE_USERS_COLLECTION,
+    uid,
+    "boardState",
+    "current",
+  );
 }
 
 function getSyncOpsCollectionRef(uid: string) {
   if (!firebaseFirestore) {
     return null;
   }
-  return collection(firebaseFirestore, "users", uid, "syncOps");
+  return collection(firebaseFirestore, FIREBASE_USERS_COLLECTION, uid, "syncOps");
 }
 
 function getSyncOpDocRef(uid: string, opId: string) {
@@ -178,6 +188,34 @@ export async function appendCloudSyncOperation(input: {
   });
 }
 
+export async function clearCloudSyncData(uid: string): Promise<void> {
+  const boardRef = getBoardDocRef(uid);
+  const syncOpsCollectionRef = getSyncOpsCollectionRef(uid);
+
+  if (syncOpsCollectionRef) {
+    while (true) {
+      const snapshot = await getDocs(query(syncOpsCollectionRef, limit(200)));
+      if (snapshot.empty) {
+        break;
+      }
+
+      await Promise.all(
+        snapshot.docs.map((documentSnapshot) =>
+          deleteDoc(documentSnapshot.ref),
+        ),
+      );
+
+      if (snapshot.size < 200) {
+        break;
+      }
+    }
+  }
+
+  if (boardRef) {
+    await deleteDoc(boardRef);
+  }
+}
+
 export async function listCloudSyncOperationsSince(input: {
   uid: string;
   cursor: CloudSyncCursor | null;
@@ -318,6 +356,18 @@ function mergeReviewHistory(
   return [...entries.values()].slice(0, 10);
 }
 
+function mergeCompletionCountsByDate(
+  cloud: BoardStateSnapshot["completionCountsByDate"],
+  local: BoardStateSnapshot["completionCountsByDate"],
+): BoardStateSnapshot["completionCountsByDate"] {
+  const allKeys = new Set([...Object.keys(cloud), ...Object.keys(local)]);
+  const merged: BoardStateSnapshot["completionCountsByDate"] = {};
+  for (const dayKey of allKeys) {
+    merged[dayKey] = Math.max(cloud[dayKey] ?? 0, local[dayKey] ?? 0);
+  }
+  return merged;
+}
+
 export function mergeBoardSnapshots(
   localSnapshot: BoardStateSnapshot,
   cloudSnapshot: BoardStateSnapshot,
@@ -379,6 +429,27 @@ export function mergeBoardSnapshots(
       cloudSnapshot.reviewHistory,
       localSnapshot.reviewHistory,
     ),
+    completionCountsByDate: mergeCompletionCountsByDate(
+      cloudSnapshot.completionCountsByDate,
+      localSnapshot.completionCountsByDate,
+    ),
+    uiPreferences: {
+      dashboardLayout: {
+        widgetOrder:
+          localSnapshot.uiPreferences.dashboardLayout.widgetOrder.length > 0
+            ? localSnapshot.uiPreferences.dashboardLayout.widgetOrder
+            : cloudSnapshot.uiPreferences.dashboardLayout.widgetOrder,
+        hiddenWidgets:
+          localSnapshot.uiPreferences.dashboardLayout.hiddenWidgets.length > 0
+            ? localSnapshot.uiPreferences.dashboardLayout.hiddenWidgets
+            : cloudSnapshot.uiPreferences.dashboardLayout.hiddenWidgets,
+      },
+      heatmapSettings: {
+        sensitivity:
+          localSnapshot.uiPreferences.heatmapSettings.sensitivity ??
+          cloudSnapshot.uiPreferences.heatmapSettings.sensitivity,
+      },
+    },
   };
 }
 

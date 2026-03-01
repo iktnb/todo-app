@@ -1,0 +1,117 @@
+import type { TranslationMessages } from "../types";
+
+export const workflowsEnTranslations: TranslationMessages = {
+  "clarify.outcome.next_action": "Next Action",
+  "clarify.outcome.project": "Project",
+  "clarify.outcome.someday": "Someday",
+  "clarify.outcome.trash": "Trash",
+  "clarify.error.needContext": "At least one context is required for Next Action.",
+  "clarify.error.createNextAction":
+    "Failed to create Next Action. Check input and retry.",
+  "clarify.error.projectTitle": "Provide a project title.",
+  "clarify.error.createProject": "Failed to create Project. Check input and retry.",
+  "clarify.error.moveSomeday": "Failed to move item to Someday.",
+  "clarify.error.moveTrash": "Failed to delete item from Inbox.",
+  "clarify.title": "Clarify Wizard",
+  "clarify.resultTitle": "Clarification result",
+  "clarify.item": "Item: {{title}}",
+  "clarify.actionable": "Is it actionable?",
+  "clarify.oneStep": "Is it one-step?",
+  "clarify.nonActionableDestination": "Where should this non-actionable item go?",
+  "clarify.somedayNotes": "Notes for Someday (optional)",
+  "clarify.someday": "Someday",
+  "clarify.trash": "Trash",
+  "clarify.nextActionTitle": "Next Action title",
+  "clarify.context": "Context",
+  "clarify.createNextAction": "Create Next Action",
+  "clarify.projectTitle": "Project title",
+  "clarify.notesOptional": "Notes (optional)",
+  "clarify.createProject": "Create Project",
+  "clarify.confirm": 'Item "{{itemTitle}}" was processed as {{outcomeLabel}}.',
+  "clarify.close": "Close",
+  "clarify.cancel": "Cancel",
+  "clarify.yes": "Yes",
+  "clarify.no": "No",
+  "clarify.back": "Back",
+  "review.steps.emptyInbox.title": "Empty Inbox",
+  "review.steps.emptyInbox.description":
+    "Clarify all captured items and get inbox to zero.",
+  "review.steps.checkProjects.title": "Check all Projects",
+  "review.steps.checkProjects.description":
+    "Review active outcomes and detect stale/problematic ones.",
+  "review.steps.ensureNextAction.title": "Ensure every Project has Next Action",
+  "review.steps.ensureNextAction.description":
+    "Every active project must keep at least one active action.",
+  "review.steps.waitingFor.title": "Review Waiting For",
+  "review.steps.waitingFor.description":
+    "Track delegated commitments and follow-up points.",
+  "review.steps.cleanSomeday.title": "Clean Someday list",
+  "review.steps.cleanSomeday.description":
+    "Keep your non-committed ideas intentional.",
+  "review.steps.closeLoops.title": "Close completed loops",
+  "review.steps.closeLoops.description":
+    "Close finished commitments and clear leftovers.",
+  "review.steps.setIntention.title": "Set intention for next week",
+  "review.steps.setIntention.description":
+    "Capture your focus note for the next week.",
+  "review.inboxUnclarified": "Unclarified inbox items: {{count}}",
+  "review.goInbox": "Go to Inbox",
+  "review.projectsNeedAttention": "Projects requiring attention: {{count}}",
+  "review.allProjectsHealthy": "All active projects look healthy.",
+  "review.openProjectView": "Open Project View",
+  "review.projectsWithoutAction": "Active projects without next action: {{count}}",
+  "review.ruleSatisfied":
+    "Rule satisfied: every active project has at least one next action.",
+  "review.fixInProjects": "Fix in Projects",
+  "review.waitingFollowUps": "Waiting follow-ups ready: {{count}}",
+  "review.somedaySize": "Someday list size: {{count}}",
+  "review.closedLoops":
+    "Closed loops candidate: done actions {{actions}}, done projects {{projects}}.",
+  "review.intentionLabel": "Intention note for next week",
+  "review.intentionPlaceholder": "What should matter most next week?",
+  "review.aria": "Weekly Review",
+  "review.title": "Weekly Review",
+  "review.startedAt": "Started: {{date}}",
+  "review.startButton": "Start Weekly Review",
+  "review.completedTitle": "Review Completed",
+  "review.completedAt": "Completed at {{date}}",
+  "review.snapshot":
+    "Snapshot: inbox {{inbox}}, missing actions {{missing}}, waiting follow-ups {{waiting}}",
+  "review.note": "Note: {{note}}",
+  "review.noteFallback": "No intention note provided.",
+  "review.stepIndicator": "Step {{current}} of {{total}}",
+  "review.previous": "Previous",
+  "review.next": "Next step",
+  "review.complete": "Complete Weekly Review",
+  "review.startHint":
+    "Start review to walk through all 7 GTD steps and complete integrity checks before closing the week.",
+  "stepper.aria": "Weekly review steps",
+  "stepper.stepAria": "Step {{step}}: {{title}}",
+  "state.projectInvariant":
+    'Project "{{projectTitle}}" must keep at least one active Next Action.',
+  "state.backup.copySuccess": "Encrypted backup copied to clipboard.",
+  "state.backup.copyFail": "Unable to copy backup. Check clipboard permissions.",
+  "state.backup.emptyInput": "Backup string is empty.",
+  "state.backup.invalid": "Backup is corrupted or has unsupported format.",
+  "state.backup.importSuccess": "Backup imported successfully.",
+  "state.backup.decryptFail": "Unable to decrypt backup. Check backup string.",
+  "state.cloudReset.success": "Cloud data has been deleted.",
+  "state.cloudReset.fail": "Unable to delete cloud data. Please try again.",
+  "state.cloudReset.noAuth":
+    "Sign in to a cloud account before deleting cloud data.",
+  "sync.merge.prompt":
+    "Cloud data differs from local data. Press OK to replace local data with cloud data. Press Cancel to merge local and cloud data.",
+  "sync.error.init": "Unable to initialize cloud sync.",
+  "sync.error.listen": "Cloud sync listener failed.",
+  "sync.error.push": "Unable to upload local changes to cloud.",
+  "sync.error.offline": "You are offline. Changes will sync when online.",
+  "sync.error.resync":
+    "Cloud sync history is inconsistent. Please force a cloud resync.",
+  "state.context.customDescription": "Custom context",
+  "state.review.error.inbox":
+    "Cannot complete review: Inbox still has unclarified items. Run Clarify first.",
+  "state.review.error.projects":
+    "Cannot complete review: there are active projects without Next Action.",
+  "pwa.offlineReady": "FlowAnchor Todo is ready for offline usage",
+  "pwa.updateConfirm": "A new app version is available. Update now?",
+};

@@ -10,4 +10,5 @@ export interface NextAction {
   energy?: NextActionEnergy;
   status: NextActionStatus;
   projectId?: string | null;
+  completedAt?: string;
 }

@@ -288,6 +288,22 @@ export class IndexedDbCloudSyncStore {
     database.close();
     return nextValue;
   }
+
+  async clearSyncState(): Promise<void> {
+    const database = await openCloudSyncDb();
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(
+        [OUTBOX_STORE, META_STORE],
+        "readwrite",
+      );
+      transaction.objectStore(OUTBOX_STORE).clear();
+      transaction.objectStore(META_STORE).delete(LAST_ACK_CURSOR_KEY);
+      transaction.objectStore(META_STORE).delete(APPLIED_OP_IDS_KEY);
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+  }
 }
 
 export const cloudSyncStore = new IndexedDbCloudSyncStore();

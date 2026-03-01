@@ -8,4 +8,5 @@ export interface Project {
   createdAt: string;
   reviewAt: string;
   lastReviewedAt?: string;
+  completedAt?: string;
 }

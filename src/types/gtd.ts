@@ -12,6 +12,8 @@ export { NextActionEnergy as NextActionEnergyEnum } from "./enums/next-action-en
 export type { NextActionEnergy } from "./enums/next-action-energy";
 export { ProjectStatus as ProjectStatusEnum } from "./enums/project-status";
 export type { ProjectStatus } from "./enums/project-status";
+export { ProjectStatusFilter as ProjectStatusFilterEnum } from "./enums/project-status-filter";
+export type { ProjectStatusFilter } from "./enums/project-status-filter";
 export { ProjectHealth as ProjectHealthEnum } from "./enums/project-health";
 export type { ProjectHealth } from "./enums/project-health";
 

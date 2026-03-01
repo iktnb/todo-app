@@ -17,3 +17,4 @@ export type { CloudBoardDocument } from "./sync/cloud-board-document";
 export type { CloudSyncCursor } from "./sync/cloud-sync-cursor";
 export type { CloudSyncOperation } from "./sync/cloud-sync-operation";
 export type { CloudSyncOperationPage } from "./sync/cloud-sync-operation-page";
+export type * from "./ui";

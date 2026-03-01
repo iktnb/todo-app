@@ -19,5 +19,8 @@ export default defineConfig([
       ecmaVersion: "latest",
       globals: globals.browser,
     },
+    rules: {
+      "max-lines": ["error", { max: 600 }],
+    },
   },
 ]);

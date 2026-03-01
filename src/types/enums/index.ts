@@ -14,6 +14,8 @@ export { NextActionEnergy as NextActionEnergyEnum } from "./next-action-energy";
 export type { NextActionEnergy } from "./next-action-energy";
 export { ProjectStatus as ProjectStatusEnum } from "./project-status";
 export type { ProjectStatus } from "./project-status";
+export { ProjectStatusFilter as ProjectStatusFilterEnum } from "./project-status-filter";
+export type { ProjectStatusFilter } from "./project-status-filter";
 export { ProjectHealth as ProjectHealthEnum } from "./project-health";
 export type { ProjectHealth } from "./project-health";
 export { CloudSyncStatus as CloudSyncStatusEnum } from "./cloud-sync-status";
@@ -22,3 +24,7 @@ export { CloudSyncOperationType as CloudSyncOperationTypeEnum } from "./cloud-sy
 export type { CloudSyncOperationType } from "./cloud-sync-operation-type";
 export { CloudMergeStrategy as CloudMergeStrategyEnum } from "./cloud-merge-strategy";
 export type { CloudMergeStrategy } from "./cloud-merge-strategy";
+export { BoardDashboardWidgetType as BoardDashboardWidgetTypeEnum } from "./board-dashboard-widget-type";
+export type { BoardDashboardWidgetType } from "./board-dashboard-widget-type";
+export { HeatmapSensitivity as HeatmapSensitivityEnum } from "./heatmap-sensitivity";
+export type { HeatmapSensitivity } from "./heatmap-sensitivity";

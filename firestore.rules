@@ -7,5 +7,11 @@ service cloud.firestore {
     match /users/{userId}/syncOps/{opId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+    match /users_dev/{userId}/boardState/{documentId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /users_dev/{userId}/syncOps/{opId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }

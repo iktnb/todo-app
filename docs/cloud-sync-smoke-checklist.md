@@ -12,7 +12,9 @@ Run with `VITE_CLOUD_SYNC_ENABLED=true` and valid Firebase env vars.
 ## First Sync
 
 - Sign in on device A with existing local data.
-- If cloud is empty, verify data appears in Firestore document `users/{uid}/boardState/current`.
+- If cloud is empty, verify data appears in Firestore document:
+  - local dev (`npm run dev`): `users_dev/{uid}/boardState/current`
+  - production build: `users/{uid}/boardState/current`
 - Sign in on device B and verify cloud snapshot is applied locally.
 
 ## Merge/Replace Flow

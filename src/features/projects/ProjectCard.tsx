@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ProjectCard as DsProjectCard } from "../../../design-system/components/ProjectCard";
 import type {
   Context,
@@ -7,8 +7,10 @@ import type {
   ProjectHealth,
   ProjectStatus,
 } from "../../types/gtd";
-import { NextActionStatusEnum, ProjectStatusEnum } from "../../types/gtd";
+import { ProjectStatusEnum } from "../../types/gtd";
 import { useI18n } from "../../i18n/useI18n";
+import { ProjectCardControls } from "./components/ProjectCardControls";
+import { ProjectCardFooter } from "./components/ProjectCardFooter";
 
 interface ProjectCardProps {
   project: Project;
@@ -50,14 +52,6 @@ export function ProjectCard({
   );
   const [bindNextActionId, setBindNextActionId] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  const availableUnboundActions = useMemo(
-    () =>
-      unboundActiveNextActions.filter(
-        (nextAction) => nextAction.status === NextActionStatusEnum.Active,
-      ),
-    [unboundActiveNextActions],
-  );
 
   function handleSaveTitle() {
     const isUpdated = onUpdateTitle(project.id, draftTitle);
@@ -146,131 +140,35 @@ export function ProjectCard({
         noContext: t("ds.project.noContext"),
       }}
       controls={
-        <div className="grid gap-2 rounded-xl border border-slate-400/25 bg-slate-900/60 p-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <label
-              className="text-xs text-slate-300"
-              htmlFor={`project-status-${project.id}`}
-            >
-              {t("project.card.status")}
-            </label>
-            <select
-              id={`project-status-${project.id}`}
-              className="rounded-[10px] border border-slate-400/35 bg-slate-900/75 px-2 py-1.5 text-xs text-slate-200"
-              value={project.status}
-              onChange={(event) =>
-                handleStatusChange(event.target.value as ProjectStatus)
-              }
-            >
-              <option value={ProjectStatusEnum.Active}>
-                {t("ds.project.status.active")}
-              </option>
-              <option value={ProjectStatusEnum.OnHold}>
-                {t("ds.project.status.on_hold")}
-              </option>
-              <option value={ProjectStatusEnum.Done}>
-                {t("ds.project.status.done")}
-              </option>
-            </select>
-          </div>
-
-          {isEditingTitle ? (
-            <div className="grid gap-2">
-              <input
-                className="w-full rounded-[10px] border border-slate-400/35 bg-slate-900/75 px-2.5 py-2 text-sm text-slate-200"
-                type="text"
-                value={draftTitle}
-                onChange={(event) => setDraftTitle(event.target.value)}
-              />
-              <div className="flex gap-2">
-                <button
-                  className="cursor-pointer rounded-[10px] border border-sky-400/50 bg-sky-400/15 px-2.5 py-1.5 text-xs font-semibold text-sky-200"
-                  type="button"
-                  onClick={handleSaveTitle}
-                >
-                  {t("project.card.saveTitle")}
-                </button>
-                <button
-                  className="cursor-pointer rounded-[10px] border border-slate-400/45 bg-slate-700/40 px-2.5 py-1.5 text-xs text-slate-200"
-                  type="button"
-                  onClick={() => {
-                    setDraftTitle(project.title);
-                    setIsEditingTitle(false);
-                    setError(null);
-                  }}
-                >
-                  {t("project.cancel")}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              className="w-fit cursor-pointer rounded-[10px] border border-slate-400/45 bg-slate-700/40 px-2.5 py-1.5 text-xs text-slate-200"
-              type="button"
-              onClick={() => setIsEditingTitle(true)}
-            >
-              {t("project.card.editTitle")}
-            </button>
-          )}
-        </div>
+        <ProjectCardControls
+          project={project}
+          isEditingTitle={isEditingTitle}
+          draftTitle={draftTitle}
+          onDraftTitleChange={setDraftTitle}
+          onSaveTitle={handleSaveTitle}
+          onCancelEditTitle={() => {
+            setDraftTitle(project.title);
+            setIsEditingTitle(false);
+            setError(null);
+          }}
+          onStartEditTitle={() => setIsEditingTitle(true)}
+          onStatusChange={handleStatusChange}
+        />
       }
       footer={
-        <div className="grid gap-2 rounded-xl border border-slate-400/25 bg-slate-900/60 p-2.5">
-          <p className="m-0 text-xs font-semibold tracking-[0.02em] text-slate-300">
-            {t("project.card.quickAdd")}
-          </p>
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-            <input
-              className="w-full rounded-[10px] border border-slate-400/35 bg-slate-900/75 px-2.5 py-2 text-sm text-slate-200"
-              type="text"
-              value={quickAddTitle}
-              onChange={(event) => setQuickAddTitle(event.target.value)}
-              placeholder={t("project.card.quickAddPlaceholder")}
-            />
-            <select
-              className="rounded-[10px] border border-slate-400/35 bg-slate-900/75 px-2 py-2 text-xs text-slate-200"
-              value={quickAddContextId}
-              onChange={(event) => setQuickAddContextId(event.target.value)}
-            >
-              {contexts.map((context) => (
-                <option key={context.id} value={context.id}>
-                  {context.name}
-                </option>
-              ))}
-            </select>
-            <button
-              className="cursor-pointer rounded-[10px] border border-emerald-400/50 bg-emerald-400/15 px-2.5 py-2 text-xs font-semibold text-emerald-200"
-              type="button"
-              onClick={handleQuickAdd}
-            >
-              {t("project.card.add")}
-            </button>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-            <select
-              className="rounded-[10px] border border-slate-400/35 bg-slate-900/75 px-2 py-2 text-xs text-slate-200"
-              value={bindNextActionId}
-              onChange={(event) => setBindNextActionId(event.target.value)}
-            >
-              <option value="">{t("project.card.bindExisting")}</option>
-              {availableUnboundActions.map((nextAction) => (
-                <option key={nextAction.id} value={nextAction.id}>
-                  {nextAction.title}
-                </option>
-              ))}
-            </select>
-            <button
-              className="cursor-pointer rounded-[10px] border border-violet-400/50 bg-violet-400/15 px-2.5 py-2 text-xs font-semibold text-violet-200"
-              type="button"
-              onClick={handleBind}
-            >
-              {t("project.card.bind")}
-            </button>
-          </div>
-
-          {error ? <p className="m-0 text-xs text-rose-300">{error}</p> : null}
-        </div>
+        <ProjectCardFooter
+          contexts={contexts}
+          unboundActiveNextActions={unboundActiveNextActions}
+          quickAddTitle={quickAddTitle}
+          quickAddContextId={quickAddContextId}
+          bindNextActionId={bindNextActionId}
+          onQuickAddTitleChange={setQuickAddTitle}
+          onQuickAddContextIdChange={setQuickAddContextId}
+          onBindNextActionIdChange={setBindNextActionId}
+          onQuickAdd={handleQuickAdd}
+          onBind={handleBind}
+          error={error}
+        />
       }
     />
   );

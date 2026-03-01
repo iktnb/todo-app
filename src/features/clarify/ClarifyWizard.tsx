@@ -12,6 +12,7 @@ import {
   TrashReasonEnum,
 } from "../../types/gtd";
 import { useI18n } from "../../i18n/useI18n";
+import { NeonSelect } from "../../../design-system/components";
 
 interface ClarifyWizardProps {
   targetItem: Item | null;
@@ -46,6 +47,10 @@ export function ClarifyWizard({
   onApplyTrash,
 }: ClarifyWizardProps) {
   const { t } = useI18n();
+  const contextOptions = contexts.map((context) => ({
+    value: context.id,
+    label: context.name,
+  }));
   const outcomeLabel: Record<ClarifyResult["outcome"], string> = {
     [ClarifyOutcomeEnum.NextAction]: t("clarify.outcome.next_action"),
     [ClarifyOutcomeEnum.Project]: t("clarify.outcome.project"),
@@ -316,20 +321,14 @@ export function ClarifyWizard({
                 htmlFor="clarify-next-action-context"
               >
                 {t("clarify.context")}
-                <select
+                <NeonSelect<string>
                   id="clarify-next-action-context"
-                  className="w-full rounded-[10px] border border-slate-400/35 bg-slate-900/75 px-2.5 py-2 text-sm text-slate-200 focus:border-sky-400/90 focus:outline-none"
+                  className="w-full"
+                  buttonClassName="py-2 text-sm"
                   value={nextActionContextId}
-                  onChange={(event) =>
-                    setNextActionContextId(event.target.value)
-                  }
-                >
-                  {contexts.map((context) => (
-                    <option key={context.id} value={context.id}>
-                      {context.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setNextActionContextId}
+                  options={contextOptions}
+                />
               </label>
               <div className="flex flex-wrap gap-2">
                 <button

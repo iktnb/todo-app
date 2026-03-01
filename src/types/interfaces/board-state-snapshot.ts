@@ -5,10 +5,11 @@ import type { NextAction } from "./next-action";
 import type { Project } from "./project";
 import type { SomedayItem } from "./someday-item";
 import type { Task } from "./task";
+import type { BoardUiPreferences } from "./ui/board-ui-preferences";
 import type { WeeklyReviewSnapshot } from "./weekly-review-snapshot";
 
 export interface BoardStateSnapshot {
-  version: 5;
+  version: 8;
   columns: Column[];
   tasks: Task[];
   items: Item[];
@@ -23,4 +24,6 @@ export interface BoardStateSnapshot {
   weeklyReviewStartedAt: string | null;
   weeklyReviewNote: string;
   reviewHistory: WeeklyReviewSnapshot[];
+  completionCountsByDate: Record<string, number>;
+  uiPreferences: BoardUiPreferences;
 }

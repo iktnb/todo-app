@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import type { BoardStateSnapshot } from "../../types/interfaces/board-state-snapshot";
+import {
+  BoardDashboardWidgetTypeEnum,
+  HeatmapSensitivityEnum,
+} from "../../types/enums";
 import { createCloudSyncOperation } from "./create-cloud-sync-operation";
 
 const baseSnapshot: BoardStateSnapshot = {
-  version: 5,
+  version: 8,
   columns: [],
   tasks: [],
   items: [],
@@ -18,6 +22,20 @@ const baseSnapshot: BoardStateSnapshot = {
   weeklyReviewStartedAt: null,
   weeklyReviewNote: "",
   reviewHistory: [],
+  completionCountsByDate: {},
+  uiPreferences: {
+    dashboardLayout: {
+      widgetOrder: [
+        BoardDashboardWidgetTypeEnum.TasksSummary,
+        BoardDashboardWidgetTypeEnum.TaskStatusBreakdown,
+        BoardDashboardWidgetTypeEnum.ActivityHeatmap,
+      ],
+      hiddenWidgets: [],
+    },
+    heatmapSettings: {
+      sensitivity: HeatmapSensitivityEnum.Balanced,
+    },
+  },
 };
 
 describe("createCloudSyncOperation", () => {

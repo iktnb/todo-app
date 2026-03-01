@@ -14,6 +14,12 @@ import {
 } from "../utils/board-backup-crypto";
 import { TaskStatusEnum } from "../types/board";
 import type { Column, Task, TaskStatus } from "../types/board";
+import {
+  BoardDashboardWidgetTypeEnum,
+  HeatmapSensitivityEnum,
+  type BoardDashboardWidgetType,
+  type HeatmapSensitivity,
+} from "../types/enums";
 import type {
   ClarifyDecisionState,
   ClarifyOutcomeInput,
@@ -44,6 +50,7 @@ import type {
   BoardStateSnapshot,
   LegacyBoardStateSnapshot,
 } from "../types/storage";
+import type { BoardDashboardLayout } from "../types/interfaces/ui";
 
 interface BoardState {
   columns: Column[];
@@ -60,6 +67,9 @@ interface BoardState {
   weeklyReviewStartedAt: string | null;
   weeklyReviewNote: string;
   reviewHistory: WeeklyReviewSnapshot[];
+  completionCountsByDate: Record<string, number>;
+  dashboardLayout: BoardDashboardLayout;
+  heatmapSensitivity: HeatmapSensitivity;
 }
 
 interface BackupActionResult {
@@ -89,6 +99,35 @@ const PROJECT_STATUSES: ProjectStatus[] = [
   ProjectStatusEnum.Done,
 ];
 const REVIEW_STEPS_COUNT = 7;
+const DASHBOARD_WIDGET_ORDER_DEFAULT: BoardDashboardWidgetType[] = [
+  BoardDashboardWidgetTypeEnum.TasksSummary,
+  BoardDashboardWidgetTypeEnum.TaskStatusBreakdown,
+  BoardDashboardWidgetTypeEnum.WaitingTasks,
+  BoardDashboardWidgetTypeEnum.ActivityHeatmap,
+];
+const HEATMAP_SENSITIVITIES: HeatmapSensitivity[] = [
+  HeatmapSensitivityEnum.Low,
+  HeatmapSensitivityEnum.Balanced,
+  HeatmapSensitivityEnum.High,
+];
+
+function createDefaultDashboardLayout(): BoardDashboardLayout {
+  return {
+    widgetOrder: [...DASHBOARD_WIDGET_ORDER_DEFAULT],
+    hiddenWidgets: [],
+  };
+}
+
+function createDefaultHeatmapSensitivity(): HeatmapSensitivity {
+  return HeatmapSensitivityEnum.Balanced;
+}
+
+function toLocalDayKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 function countActiveProjectActions(
   nextActions: NextAction[],
@@ -127,6 +166,10 @@ function isTask(value: unknown): value is Task {
     typeof value === "object" && value !== null
       ? (value as { waitingDeadline?: unknown }).waitingDeadline
       : undefined;
+  const completedAt =
+    typeof value === "object" && value !== null
+      ? (value as { completedAt?: unknown }).completedAt
+      : undefined;
 
   return (
     typeof value === "object" &&
@@ -152,7 +195,10 @@ function isTask(value: unknown): value is Task {
         typeof waitingDeadline === "string" &&
         waitingDeadline.trim().length > 0)) &&
     "createdAt" in value &&
-    typeof value.createdAt === "string"
+    typeof value.createdAt === "string" &&
+    (!("completedAt" in value) ||
+      completedAt === undefined ||
+      typeof completedAt === "string")
   );
 }
 
@@ -202,6 +248,11 @@ function isNextActionEnergy(value: unknown): value is NextActionEnergy {
 }
 
 function isNextAction(value: unknown): value is NextAction {
+  const completedAt =
+    typeof value === "object" && value !== null
+      ? (value as { completedAt?: unknown }).completedAt
+      : undefined;
+
   return (
     typeof value === "object" &&
     value !== null &&
@@ -227,7 +278,10 @@ function isNextAction(value: unknown): value is NextAction {
     (!("projectId" in value) ||
       value.projectId === undefined ||
       value.projectId === null ||
-      typeof value.projectId === "string")
+      typeof value.projectId === "string") &&
+    (!("completedAt" in value) ||
+      completedAt === undefined ||
+      typeof completedAt === "string")
   );
 }
 
@@ -239,6 +293,11 @@ function isProjectStatus(value: unknown): value is ProjectStatus {
 }
 
 function isProject(value: unknown): value is Project {
+  const completedAt =
+    typeof value === "object" && value !== null
+      ? (value as { completedAt?: unknown }).completedAt
+      : undefined;
+
   return (
     typeof value === "object" &&
     value !== null &&
@@ -257,7 +316,10 @@ function isProject(value: unknown): value is Project {
     typeof value.reviewAt === "string" &&
     (!("lastReviewedAt" in value) ||
       value.lastReviewedAt === undefined ||
-      typeof value.lastReviewedAt === "string")
+      typeof value.lastReviewedAt === "string") &&
+    (!("completedAt" in value) ||
+      completedAt === undefined ||
+      typeof completedAt === "string")
   );
 }
 
@@ -318,6 +380,75 @@ function isWeeklyReviewSnapshot(value: unknown): value is WeeklyReviewSnapshot {
     "waitingFollowUps" in value.counters &&
     typeof value.counters.waitingFollowUps === "number"
   );
+}
+
+function isBoardDashboardWidgetType(
+  value: unknown,
+): value is BoardDashboardWidgetType {
+  return (
+    typeof value === "string" &&
+    DASHBOARD_WIDGET_ORDER_DEFAULT.includes(value as BoardDashboardWidgetType)
+  );
+}
+
+function isHeatmapSensitivity(value: unknown): value is HeatmapSensitivity {
+  return (
+    typeof value === "string" &&
+    HEATMAP_SENSITIVITIES.includes(value as HeatmapSensitivity)
+  );
+}
+
+function isBoardDashboardLayout(value: unknown): value is BoardDashboardLayout {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "widgetOrder" in value &&
+    Array.isArray(value.widgetOrder) &&
+    value.widgetOrder.every((widgetType) =>
+      isBoardDashboardWidgetType(widgetType),
+    ) &&
+    "hiddenWidgets" in value &&
+    Array.isArray(value.hiddenWidgets) &&
+    value.hiddenWidgets.every((widgetType) =>
+      isBoardDashboardWidgetType(widgetType),
+    )
+  );
+}
+
+function isCompletionCountsByDate(
+  value: unknown,
+): value is Record<string, number> {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  return Object.entries(value).every(
+    ([key, dayCount]) =>
+      typeof key === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(key) &&
+      typeof dayCount === "number" &&
+      Number.isFinite(dayCount) &&
+      dayCount >= 0,
+  );
+}
+
+function normalizeDashboardLayout(layout: BoardDashboardLayout): BoardDashboardLayout {
+  const hiddenSet = new Set(layout.hiddenWidgets);
+  const orderWithoutUnknowns = layout.widgetOrder.filter((widgetType) =>
+    DASHBOARD_WIDGET_ORDER_DEFAULT.includes(widgetType),
+  );
+  const completedOrder = [
+    ...orderWithoutUnknowns,
+    ...DASHBOARD_WIDGET_ORDER_DEFAULT.filter(
+      (widgetType) => !orderWithoutUnknowns.includes(widgetType),
+    ),
+  ];
+
+  return {
+    widgetOrder: completedOrder,
+    hiddenWidgets: completedOrder.filter((widgetType) =>
+      hiddenSet.has(widgetType),
+    ),
+  };
 }
 
 function isLegacyBoardStateSnapshot(
@@ -384,6 +515,205 @@ function isBoardStateSnapshot(value: unknown): value is BoardStateSnapshot {
     typeof value.weeklyReviewNote === "string" &&
     "reviewHistory" in value &&
     Array.isArray(value.reviewHistory) &&
+    value.reviewHistory.every((snapshot) => isWeeklyReviewSnapshot(snapshot)) &&
+    "completionCountsByDate" in value &&
+    isCompletionCountsByDate(value.completionCountsByDate) &&
+    "uiPreferences" in value &&
+    typeof value.uiPreferences === "object" &&
+    value.uiPreferences !== null &&
+    "dashboardLayout" in value.uiPreferences &&
+    isBoardDashboardLayout(value.uiPreferences.dashboardLayout) &&
+    "heatmapSettings" in value.uiPreferences &&
+    typeof value.uiPreferences.heatmapSettings === "object" &&
+    value.uiPreferences.heatmapSettings !== null &&
+    "sensitivity" in value.uiPreferences.heatmapSettings &&
+    isHeatmapSensitivity(value.uiPreferences.heatmapSettings.sensitivity)
+  );
+}
+
+function isBoardStateSnapshotV7(
+  value: unknown,
+): value is Omit<BoardStateSnapshot, "version" | "completionCountsByDate"> & {
+  version: 7;
+} {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "version" in value &&
+    value.version === 7 &&
+    "columns" in value &&
+    Array.isArray(value.columns) &&
+    value.columns.every((column) => isColumn(column)) &&
+    "tasks" in value &&
+    Array.isArray(value.tasks) &&
+    value.tasks.every((task) => isTask(task)) &&
+    "items" in value &&
+    Array.isArray(value.items) &&
+    value.items.every((item) => isItem(item)) &&
+    "nextActions" in value &&
+    Array.isArray(value.nextActions) &&
+    value.nextActions.every((nextAction) => isNextAction(nextAction)) &&
+    "projects" in value &&
+    Array.isArray(value.projects) &&
+    value.projects.every((project) => isProject(project)) &&
+    "somedayItems" in value &&
+    Array.isArray(value.somedayItems) &&
+    value.somedayItems.every((somedayItem) => isSomedayItem(somedayItem)) &&
+    "contexts" in value &&
+    Array.isArray(value.contexts) &&
+    value.contexts.every((context) => isContext(context)) &&
+    "selectedContextId" in value &&
+    (value.selectedContextId === null ||
+      typeof value.selectedContextId === "string") &&
+    "legacyTaskIds" in value &&
+    Array.isArray(value.legacyTaskIds) &&
+    value.legacyTaskIds.every((taskId) => typeof taskId === "string") &&
+    "isMigratedFromLegacy" in value &&
+    typeof value.isMigratedFromLegacy === "boolean" &&
+    "currentReviewStep" in value &&
+    typeof value.currentReviewStep === "number" &&
+    Number.isInteger(value.currentReviewStep) &&
+    value.currentReviewStep >= 0 &&
+    value.currentReviewStep < REVIEW_STEPS_COUNT &&
+    "weeklyReviewStartedAt" in value &&
+    (value.weeklyReviewStartedAt === null ||
+      typeof value.weeklyReviewStartedAt === "string") &&
+    "weeklyReviewNote" in value &&
+    typeof value.weeklyReviewNote === "string" &&
+    "reviewHistory" in value &&
+    Array.isArray(value.reviewHistory) &&
+    value.reviewHistory.every((snapshot) => isWeeklyReviewSnapshot(snapshot)) &&
+    "uiPreferences" in value &&
+    typeof value.uiPreferences === "object" &&
+    value.uiPreferences !== null &&
+    "dashboardLayout" in value.uiPreferences &&
+    isBoardDashboardLayout(value.uiPreferences.dashboardLayout) &&
+    "heatmapSettings" in value.uiPreferences &&
+    typeof value.uiPreferences.heatmapSettings === "object" &&
+    value.uiPreferences.heatmapSettings !== null &&
+    "sensitivity" in value.uiPreferences.heatmapSettings &&
+    isHeatmapSensitivity(value.uiPreferences.heatmapSettings.sensitivity)
+  );
+}
+
+function isBoardStateSnapshotV6(
+  value: unknown,
+): value is Omit<
+  BoardStateSnapshot,
+  "version" | "uiPreferences" | "completionCountsByDate"
+> & {
+  version: 6;
+  uiPreferences: { dashboardLayout: BoardDashboardLayout };
+} {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "version" in value &&
+    value.version === 6 &&
+    "columns" in value &&
+    Array.isArray(value.columns) &&
+    value.columns.every((column) => isColumn(column)) &&
+    "tasks" in value &&
+    Array.isArray(value.tasks) &&
+    value.tasks.every((task) => isTask(task)) &&
+    "items" in value &&
+    Array.isArray(value.items) &&
+    value.items.every((item) => isItem(item)) &&
+    "nextActions" in value &&
+    Array.isArray(value.nextActions) &&
+    value.nextActions.every((nextAction) => isNextAction(nextAction)) &&
+    "projects" in value &&
+    Array.isArray(value.projects) &&
+    value.projects.every((project) => isProject(project)) &&
+    "somedayItems" in value &&
+    Array.isArray(value.somedayItems) &&
+    value.somedayItems.every((somedayItem) => isSomedayItem(somedayItem)) &&
+    "contexts" in value &&
+    Array.isArray(value.contexts) &&
+    value.contexts.every((context) => isContext(context)) &&
+    "selectedContextId" in value &&
+    (value.selectedContextId === null ||
+      typeof value.selectedContextId === "string") &&
+    "legacyTaskIds" in value &&
+    Array.isArray(value.legacyTaskIds) &&
+    value.legacyTaskIds.every((taskId) => typeof taskId === "string") &&
+    "isMigratedFromLegacy" in value &&
+    typeof value.isMigratedFromLegacy === "boolean" &&
+    "currentReviewStep" in value &&
+    typeof value.currentReviewStep === "number" &&
+    Number.isInteger(value.currentReviewStep) &&
+    value.currentReviewStep >= 0 &&
+    value.currentReviewStep < REVIEW_STEPS_COUNT &&
+    "weeklyReviewStartedAt" in value &&
+    (value.weeklyReviewStartedAt === null ||
+      typeof value.weeklyReviewStartedAt === "string") &&
+    "weeklyReviewNote" in value &&
+    typeof value.weeklyReviewNote === "string" &&
+    "reviewHistory" in value &&
+    Array.isArray(value.reviewHistory) &&
+    value.reviewHistory.every((snapshot) => isWeeklyReviewSnapshot(snapshot)) &&
+    "uiPreferences" in value &&
+    typeof value.uiPreferences === "object" &&
+    value.uiPreferences !== null &&
+    "dashboardLayout" in value.uiPreferences &&
+    isBoardDashboardLayout(value.uiPreferences.dashboardLayout)
+  );
+}
+
+function isBoardStateSnapshotV5(
+  value: unknown,
+): value is Omit<
+  BoardStateSnapshot,
+  "version" | "uiPreferences" | "completionCountsByDate"
+> & {
+  version: 5;
+} {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "version" in value &&
+    value.version === 5 &&
+    "columns" in value &&
+    Array.isArray(value.columns) &&
+    value.columns.every((column) => isColumn(column)) &&
+    "tasks" in value &&
+    Array.isArray(value.tasks) &&
+    value.tasks.every((task) => isTask(task)) &&
+    "items" in value &&
+    Array.isArray(value.items) &&
+    value.items.every((item) => isItem(item)) &&
+    "nextActions" in value &&
+    Array.isArray(value.nextActions) &&
+    value.nextActions.every((nextAction) => isNextAction(nextAction)) &&
+    "projects" in value &&
+    Array.isArray(value.projects) &&
+    value.projects.every((project) => isProject(project)) &&
+    "somedayItems" in value &&
+    Array.isArray(value.somedayItems) &&
+    value.somedayItems.every((somedayItem) => isSomedayItem(somedayItem)) &&
+    "contexts" in value &&
+    Array.isArray(value.contexts) &&
+    value.contexts.every((context) => isContext(context)) &&
+    "selectedContextId" in value &&
+    (value.selectedContextId === null ||
+      typeof value.selectedContextId === "string") &&
+    "legacyTaskIds" in value &&
+    Array.isArray(value.legacyTaskIds) &&
+    value.legacyTaskIds.every((taskId) => typeof taskId === "string") &&
+    "isMigratedFromLegacy" in value &&
+    typeof value.isMigratedFromLegacy === "boolean" &&
+    "currentReviewStep" in value &&
+    typeof value.currentReviewStep === "number" &&
+    Number.isInteger(value.currentReviewStep) &&
+    value.currentReviewStep >= 0 &&
+    value.currentReviewStep < REVIEW_STEPS_COUNT &&
+    "weeklyReviewStartedAt" in value &&
+    (value.weeklyReviewStartedAt === null ||
+      typeof value.weeklyReviewStartedAt === "string") &&
+    "weeklyReviewNote" in value &&
+    typeof value.weeklyReviewNote === "string" &&
+    "reviewHistory" in value &&
+    Array.isArray(value.reviewHistory) &&
     value.reviewHistory.every((snapshot) => isWeeklyReviewSnapshot(snapshot))
   );
 }
@@ -397,6 +727,8 @@ function isBoardStateSnapshotV4(
   | "weeklyReviewStartedAt"
   | "weeklyReviewNote"
   | "reviewHistory"
+  | "uiPreferences"
+  | "completionCountsByDate"
 > & { version: 4 } {
   return (
     typeof value === "object" &&
@@ -445,6 +777,8 @@ function isBoardStateSnapshotV3(
   | "weeklyReviewStartedAt"
   | "weeklyReviewNote"
   | "reviewHistory"
+  | "uiPreferences"
+  | "completionCountsByDate"
 > & { version: 3 } {
   return (
     typeof value === "object" &&
@@ -491,6 +825,8 @@ function isBoardStateSnapshotV2(
   | "weeklyReviewStartedAt"
   | "weeklyReviewNote"
   | "reviewHistory"
+  | "uiPreferences"
+  | "completionCountsByDate"
 > & { version: 2 } {
   return (
     typeof value === "object" &&
@@ -539,6 +875,9 @@ function createDefaultBoardState(defaultContexts: Context[]): BoardState {
     weeklyReviewStartedAt: null,
     weeklyReviewNote: "",
     reviewHistory: [],
+    completionCountsByDate: {},
+    dashboardLayout: createDefaultDashboardLayout(),
+    heatmapSensitivity: createDefaultHeatmapSensitivity(),
   };
 }
 
@@ -603,6 +942,9 @@ function loadBoardStateFromStorage(defaultContexts: Context[]): BoardState {
 
     if (
       !isBoardStateSnapshot(parsedSnapshot) &&
+      !isBoardStateSnapshotV7(parsedSnapshot) &&
+      !isBoardStateSnapshotV6(parsedSnapshot) &&
+      !isBoardStateSnapshotV5(parsedSnapshot) &&
       !isBoardStateSnapshotV4(parsedSnapshot) &&
       !isBoardStateSnapshotV3(parsedSnapshot) &&
       !isBoardStateSnapshotV2(parsedSnapshot)
@@ -661,6 +1003,30 @@ function loadBoardStateFromStorage(defaultContexts: Context[]): BoardState {
             isWeeklyReviewSnapshot(entry),
           )
         : [];
+    const migratedDashboardLayout =
+      "uiPreferences" in snapshot &&
+      typeof snapshot.uiPreferences === "object" &&
+      snapshot.uiPreferences !== null &&
+      "dashboardLayout" in snapshot.uiPreferences &&
+      isBoardDashboardLayout(snapshot.uiPreferences.dashboardLayout)
+        ? normalizeDashboardLayout(snapshot.uiPreferences.dashboardLayout)
+        : createDefaultDashboardLayout();
+    const migratedHeatmapSensitivity =
+      "uiPreferences" in snapshot &&
+      typeof snapshot.uiPreferences === "object" &&
+      snapshot.uiPreferences !== null &&
+      "heatmapSettings" in snapshot.uiPreferences &&
+      typeof snapshot.uiPreferences.heatmapSettings === "object" &&
+      snapshot.uiPreferences.heatmapSettings !== null &&
+      "sensitivity" in snapshot.uiPreferences.heatmapSettings &&
+      isHeatmapSensitivity(snapshot.uiPreferences.heatmapSettings.sensitivity)
+        ? snapshot.uiPreferences.heatmapSettings.sensitivity
+        : createDefaultHeatmapSensitivity();
+    const migratedCompletionCountsByDate =
+      "completionCountsByDate" in snapshot &&
+      isCompletionCountsByDate(snapshot.completionCountsByDate)
+        ? snapshot.completionCountsByDate
+        : {};
 
     return {
       ...createDefaultBoardState(defaultContexts),
@@ -690,6 +1056,9 @@ function loadBoardStateFromStorage(defaultContexts: Context[]): BoardState {
       weeklyReviewStartedAt: migratedReviewStartedAt,
       weeklyReviewNote: migratedWeeklyReviewNote,
       reviewHistory: migratedReviewHistory,
+      completionCountsByDate: migratedCompletionCountsByDate,
+      dashboardLayout: migratedDashboardLayout,
+      heatmapSensitivity: migratedHeatmapSensitivity,
     };
   } catch {
     return createDefaultBoardState(defaultContexts);
@@ -739,6 +1108,14 @@ export function useBoardState() {
   const [reviewHistory, setReviewHistory] = useState<WeeklyReviewSnapshot[]>(
     initialBoardState.reviewHistory,
   );
+  const [completionCountsByDate, setCompletionCountsByDate] = useState<
+    Record<string, number>
+  >(initialBoardState.completionCountsByDate);
+  const [dashboardLayout, setDashboardLayout] = useState<BoardDashboardLayout>(
+    initialBoardState.dashboardLayout,
+  );
+  const [heatmapSensitivity, setHeatmapSensitivity] =
+    useState<HeatmapSensitivity>(initialBoardState.heatmapSensitivity);
   const [weeklyReviewError, setWeeklyReviewError] = useState<string | null>(
     null,
   );
@@ -781,6 +1158,13 @@ export function useBoardState() {
       weeklyReviewStartedAt,
       weeklyReviewNote,
       reviewHistory,
+      completionCountsByDate,
+      uiPreferences: {
+        dashboardLayout,
+        heatmapSettings: {
+          sensitivity: heatmapSensitivity,
+        },
+      },
     }),
     [
       columns,
@@ -797,6 +1181,9 @@ export function useBoardState() {
       weeklyReviewStartedAt,
       weeklyReviewNote,
       reviewHistory,
+      completionCountsByDate,
+      dashboardLayout,
+      heatmapSensitivity,
     ],
   );
 
@@ -823,6 +1210,9 @@ export function useBoardState() {
       setWeeklyReviewStartedAt(nextState.weeklyReviewStartedAt);
       setWeeklyReviewNote(nextState.weeklyReviewNote);
       setReviewHistory(nextState.reviewHistory);
+      setCompletionCountsByDate(nextState.completionCountsByDate);
+      setDashboardLayout(nextState.dashboardLayout);
+      setHeatmapSensitivity(nextState.heatmapSensitivity);
       setWeeklyReviewError(null);
       setProjectInvariantWarning(null);
     },
@@ -843,6 +1233,14 @@ export function useBoardState() {
 
   function warnActiveProjectInvariant(projectTitle: string) {
     setProjectInvariantWarning(t("state.projectInvariant", { projectTitle }));
+  }
+
+  function incrementCompletionCount(forDate: Date = new Date()) {
+    const dayKey = toLocalDayKey(forDate);
+    setCompletionCountsByDate((currentCounts) => ({
+      ...currentCounts,
+      [dayKey]: (currentCounts[dayKey] ?? 0) + 1,
+    }));
   }
 
   function findBlockingProjectByNextAction(
@@ -918,6 +1316,7 @@ export function useBoardState() {
 
     setTasks((currentTasks) => [...currentTasks, newTask]);
     setItems((currentItems) => [...currentItems, newItem]);
+    incrementCompletionCount();
     setTaskInput("");
   }
 
@@ -955,10 +1354,27 @@ export function useBoardState() {
     nextStatus: TaskStatus,
     waitingDetails?: { waitingFor: string; waitingDeadline: string },
   ) {
+    const previousTask = tasks.find((task) => task.id === taskId);
+    const nextWaitingFor = waitingDetails?.waitingFor.trim() ?? "";
+    const nextWaitingDeadline = waitingDetails?.waitingDeadline.trim() ?? "";
+    const isWaitingPayloadValid =
+      nextWaitingFor.length > 0 && nextWaitingDeadline.length > 0;
+    const shouldIncrementTodayCounter =
+      previousTask !== undefined &&
+      (nextStatus === TaskStatusEnum.Waiting
+        ? isWaitingPayloadValid &&
+          (previousTask.status !== nextStatus ||
+            previousTask.waitingFor !== nextWaitingFor ||
+            previousTask.waitingDeadline !== nextWaitingDeadline)
+        : previousTask.status !== nextStatus ||
+          previousTask.waitingFor !== undefined ||
+          previousTask.waitingDeadline !== undefined);
+    const nowIso = new Date().toISOString();
     setTasks((currentTasks) =>
       currentTasks.map((task) =>
-        task.id === taskId
-          ? nextStatus === TaskStatusEnum.Waiting
+        task.id !== taskId
+          ? task
+          : nextStatus === TaskStatusEnum.Waiting
             ? waitingDetails?.waitingFor.trim() &&
               waitingDetails.waitingDeadline.trim()
               ? {
@@ -966,6 +1382,7 @@ export function useBoardState() {
                   status: nextStatus,
                   waitingFor: waitingDetails.waitingFor.trim(),
                   waitingDeadline: waitingDetails.waitingDeadline.trim(),
+                  completedAt: undefined,
                 }
               : task
             : {
@@ -973,18 +1390,53 @@ export function useBoardState() {
                 status: nextStatus,
                 waitingFor: undefined,
                 waitingDeadline: undefined,
-              }
-          : task,
+                completedAt:
+                  nextStatus === TaskStatusEnum.Done
+                    ? task.completedAt ?? nowIso
+                    : undefined,
+              },
       ),
     );
+    if (shouldIncrementTodayCounter) {
+      incrementCompletionCount();
+    }
+  }
+
+  function handleUpdateTaskTitle(taskId: string, nextTitle: string) {
+    const normalizedTitle = nextTitle.trim();
+    if (
+      normalizedTitle.length === 0 ||
+      normalizedTitle.length > ITEM_TITLE_MAX_LENGTH
+    ) {
+      return false;
+    }
+
+    setTasks((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === taskId ? { ...task, title: normalizedTitle } : task,
+      ),
+    );
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === taskId ? { ...item, title: normalizedTitle } : item,
+      ),
+    );
+    incrementCompletionCount();
+    return true;
   }
 
   function handleMoveTask(taskId: string, nextColumnId: string) {
+    const shouldIncrementTodayCounter = tasks.some(
+      (task) => task.id === taskId && task.columnId !== nextColumnId,
+    );
     setTasks((currentTasks) =>
       currentTasks.map((task) =>
         task.id === taskId ? { ...task, columnId: nextColumnId } : task,
       ),
     );
+    if (shouldIncrementTodayCounter) {
+      incrementCompletionCount();
+    }
   }
 
   function handleDeleteTask(taskId: string) {
@@ -1018,8 +1470,82 @@ export function useBoardState() {
     setClarifyTargetItemId((currentTargetItemId) =>
       currentTargetItemId === taskId ? null : currentTargetItemId,
     );
+    incrementCompletionCount();
     clearProjectInvariantWarning();
     return true;
+  }
+
+  function handleUnarchiveTask(taskId: string) {
+    const isArchivedTask = tasks.some(
+      (task) => task.id === taskId && task.status === TaskStatusEnum.Obsolete,
+    );
+    if (!isArchivedTask) {
+      return;
+    }
+
+    setTasks((currentTasks) =>
+      currentTasks.map((task) => {
+        if (task.id !== taskId) {
+          return task;
+        }
+
+        return {
+          ...task,
+          columnId: INBOX_COLUMN.id,
+          status: TaskStatusEnum.Todo,
+          waitingFor: undefined,
+          waitingDeadline: undefined,
+          completedAt: undefined,
+        };
+      }),
+    );
+    incrementCompletionCount();
+  }
+
+  function handleMoveSomedayItemToInbox(itemId: string) {
+    const somedayItemToRestore = somedayItems.find((item) => item.id === itemId);
+    if (!somedayItemToRestore) {
+      return;
+    }
+
+    setSomedayItems((currentSomedayItems) =>
+      currentSomedayItems.filter((item) => item.id !== itemId),
+    );
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === itemId
+          ? { ...item, clarified: false, clarifiedAt: undefined }
+          : item,
+      ),
+    );
+    setTasks((currentTasks) => {
+      const existingTask = currentTasks.find((task) => task.id === itemId);
+      if (!existingTask) {
+        const restoredTask: Task = {
+          id: itemId,
+          title: somedayItemToRestore.title,
+          columnId: INBOX_COLUMN.id,
+          status: TaskStatusEnum.Todo,
+          createdAt: new Date().toISOString(),
+        };
+        return [...currentTasks, restoredTask];
+      }
+
+      return currentTasks.map((task) =>
+        task.id === itemId
+          ? {
+              ...task,
+              title: somedayItemToRestore.title,
+              columnId: INBOX_COLUMN.id,
+              status: TaskStatusEnum.Todo,
+              waitingFor: undefined,
+              waitingDeadline: undefined,
+              completedAt: undefined,
+            }
+          : task,
+      );
+    });
+    incrementCompletionCount();
   }
 
   function handleResetLocalData() {
@@ -1045,6 +1571,9 @@ export function useBoardState() {
     setWeeklyReviewStartedAt(defaultState.weeklyReviewStartedAt);
     setWeeklyReviewNote(defaultState.weeklyReviewNote);
     setReviewHistory(defaultState.reviewHistory);
+    setCompletionCountsByDate(defaultState.completionCountsByDate);
+    setDashboardLayout(defaultState.dashboardLayout);
+    setHeatmapSensitivity(defaultState.heatmapSensitivity);
     setWeeklyReviewError(null);
     setTaskInput("");
     setColumnInput("");
@@ -1088,6 +1617,9 @@ export function useBoardState() {
       const parsedSnapshot = await decryptBackupPayload(normalized);
       const isKnownSnapshotShape =
         isBoardStateSnapshot(parsedSnapshot) ||
+        isBoardStateSnapshotV7(parsedSnapshot) ||
+        isBoardStateSnapshotV6(parsedSnapshot) ||
+        isBoardStateSnapshotV5(parsedSnapshot) ||
         isBoardStateSnapshotV4(parsedSnapshot) ||
         isBoardStateSnapshotV3(parsedSnapshot) ||
         isBoardStateSnapshotV2(parsedSnapshot) ||
@@ -1157,6 +1689,62 @@ export function useBoardState() {
     }
 
     setDragOverColumnId(null);
+  }
+
+  function moveDashboardWidget(
+    draggedWidgetType: BoardDashboardWidgetType,
+    targetWidgetType: BoardDashboardWidgetType,
+  ) {
+    if (draggedWidgetType === targetWidgetType) {
+      return;
+    }
+    setDashboardLayout((currentLayout) => {
+      const nextOrder = [...currentLayout.widgetOrder];
+      const sourceIndex = nextOrder.indexOf(draggedWidgetType);
+      const targetIndex = nextOrder.indexOf(targetWidgetType);
+      if (sourceIndex === -1 || targetIndex === -1) {
+        return currentLayout;
+      }
+
+      nextOrder.splice(sourceIndex, 1);
+      nextOrder.splice(targetIndex, 0, draggedWidgetType);
+      return {
+        ...currentLayout,
+        widgetOrder: nextOrder,
+      };
+    });
+  }
+
+  function hideDashboardWidget(widgetType: BoardDashboardWidgetType) {
+    setDashboardLayout((currentLayout) => {
+      if (currentLayout.hiddenWidgets.includes(widgetType)) {
+        return currentLayout;
+      }
+      return {
+        ...currentLayout,
+        hiddenWidgets: [...currentLayout.hiddenWidgets, widgetType],
+      };
+    });
+  }
+
+  function showDashboardWidget(widgetType: BoardDashboardWidgetType) {
+    setDashboardLayout((currentLayout) => ({
+      ...currentLayout,
+      hiddenWidgets: currentLayout.hiddenWidgets.filter(
+        (hiddenWidgetType) => hiddenWidgetType !== widgetType,
+      ),
+    }));
+  }
+
+  function resetDashboardLayout() {
+    setDashboardLayout(createDefaultDashboardLayout());
+  }
+
+  function updateHeatmapSensitivity(nextSensitivity: HeatmapSensitivity) {
+    if (!isHeatmapSensitivity(nextSensitivity)) {
+      return;
+    }
+    setHeatmapSensitivity(nextSensitivity);
   }
 
   function startClarify(itemId: string) {
@@ -1260,6 +1848,7 @@ export function useBoardState() {
         itemTitle: cleanItemTitle,
       });
       setClarifyDecisionState({ step: ClarifyWizardStepEnum.Confirm });
+      incrementCompletionCount();
       return true;
     }
 
@@ -1292,6 +1881,7 @@ export function useBoardState() {
         itemTitle: cleanItemTitle,
       });
       setClarifyDecisionState({ step: ClarifyWizardStepEnum.Confirm });
+      incrementCompletionCount();
       return true;
     }
 
@@ -1318,6 +1908,7 @@ export function useBoardState() {
         itemTitle: cleanItemTitle,
       });
       setClarifyDecisionState({ step: ClarifyWizardStepEnum.Confirm });
+      incrementCompletionCount();
       return true;
     }
 
@@ -1340,6 +1931,7 @@ export function useBoardState() {
       itemTitle: cleanItemTitle,
     });
     setClarifyDecisionState({ step: ClarifyWizardStepEnum.Confirm });
+    incrementCompletionCount();
     return true;
   }
 
@@ -1387,6 +1979,7 @@ export function useBoardState() {
           normalizedDescription || t("state.context.customDescription"),
       },
     ]);
+    incrementCompletionCount();
     return true;
   }
 
@@ -1423,6 +2016,9 @@ export function useBoardState() {
         };
       }),
     );
+    if (isUpdated) {
+      incrementCompletionCount();
+    }
     return isUpdated;
   }
 
@@ -1451,6 +2047,7 @@ export function useBoardState() {
     setSelectedContextId((currentSelectedContextId) =>
       currentSelectedContextId === contextId ? null : currentSelectedContextId,
     );
+    incrementCompletionCount();
     return true;
   }
 
@@ -1471,6 +2068,7 @@ export function useBoardState() {
         reviewAt: nowIso,
       },
     ]);
+    incrementCompletionCount();
     clearProjectInvariantWarning();
     return true;
   }
@@ -1496,6 +2094,7 @@ export function useBoardState() {
     );
 
     if (isUpdated) {
+      incrementCompletionCount();
       clearProjectInvariantWarning();
     }
 
@@ -1519,16 +2118,25 @@ export function useBoardState() {
       }
     }
 
+    const nowIso = new Date().toISOString();
+    const shouldIncrementTodayCounter = targetProject.status !== status;
     setProjects((currentProjects) =>
       currentProjects.map((project) =>
         project.id === projectId
           ? {
               ...project,
               status,
+              completedAt:
+                status === ProjectStatusEnum.Done
+                  ? project.completedAt ?? nowIso
+                  : undefined,
             }
           : project,
       ),
     );
+    if (shouldIncrementTodayCounter) {
+      incrementCompletionCount();
+    }
     clearProjectInvariantWarning();
     return true;
   }
@@ -1569,6 +2177,7 @@ export function useBoardState() {
         projectId: input.projectId ?? null,
       },
     ]);
+    incrementCompletionCount();
     clearProjectInvariantWarning();
     return true;
   }
@@ -1594,6 +2203,7 @@ export function useBoardState() {
     );
 
     if (isUpdated) {
+      incrementCompletionCount();
       clearProjectInvariantWarning();
     }
 
@@ -1628,13 +2238,109 @@ export function useBoardState() {
     );
 
     if (isUpdated) {
+      incrementCompletionCount();
       clearProjectInvariantWarning();
     }
 
     return isUpdated;
   }
 
-  function markNextActionDone(nextActionId: string) {
+  function setNextActionStatus(nextActionId: string, status: NextActionStatus) {
+    const targetNextAction = nextActions.find(
+      (nextAction) => nextAction.id === nextActionId,
+    );
+    if (!targetNextAction) {
+      return false;
+    }
+
+    if (status === NextActionStatusEnum.Done) {
+      const blockingProject = findBlockingProjectByNextAction(
+        nextActionId,
+        nextActions,
+      );
+      if (blockingProject) {
+        warnActiveProjectInvariant(blockingProject.title);
+        return false;
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const shouldIncrementTodayCounter = targetNextAction.status !== status;
+    setNextActions((currentNextActions) =>
+      currentNextActions.map((nextAction) =>
+        nextAction.id === nextActionId
+          ? {
+              ...nextAction,
+              status,
+              completedAt:
+                status === NextActionStatusEnum.Done
+                  ? nextAction.completedAt ?? nowIso
+                  : undefined,
+            }
+          : nextAction,
+      ),
+    );
+
+    if (shouldIncrementTodayCounter) {
+      incrementCompletionCount();
+    }
+    clearProjectInvariantWarning();
+    return true;
+  }
+
+  function updateNextAction(
+    nextActionId: string,
+    input: {
+      title: string;
+      notes?: string;
+      contextId: string;
+    },
+  ) {
+    const normalizedTitle = input.title.trim();
+    if (!normalizedTitle) {
+      return false;
+    }
+
+    const preferredContextId =
+      contexts.find((context) => context.id === input.contextId)?.id ?? null;
+    if (!preferredContextId) {
+      return false;
+    }
+
+    const normalizedNotes = input.notes?.trim() || undefined;
+    let isUpdated = false;
+    setNextActions((currentNextActions) =>
+      currentNextActions.map((nextAction) => {
+        if (nextAction.id !== nextActionId) {
+          return nextAction;
+        }
+
+        const hasChanges =
+          nextAction.title !== normalizedTitle ||
+          (nextAction.notes ?? undefined) !== normalizedNotes ||
+          nextAction.contextId !== preferredContextId;
+        if (!hasChanges) {
+          return nextAction;
+        }
+
+        isUpdated = true;
+        return {
+          ...nextAction,
+          title: normalizedTitle,
+          notes: normalizedNotes,
+          contextId: preferredContextId,
+        };
+      }),
+    );
+
+    if (isUpdated) {
+      incrementCompletionCount();
+      clearProjectInvariantWarning();
+    }
+    return isUpdated;
+  }
+
+  function deleteNextAction(nextActionId: string) {
     const blockingProject = findBlockingProjectByNextAction(
       nextActionId,
       nextActions,
@@ -1644,16 +2350,15 @@ export function useBoardState() {
       return false;
     }
 
+    const hasTarget = nextActions.some((nextAction) => nextAction.id === nextActionId);
+    if (!hasTarget) {
+      return false;
+    }
+
     setNextActions((currentNextActions) =>
-      currentNextActions.map((nextAction) =>
-        nextAction.id === nextActionId
-          ? {
-              ...nextAction,
-              status: NextActionStatusEnum.Done,
-            }
-          : nextAction,
-      ),
+      currentNextActions.filter((nextAction) => nextAction.id !== nextActionId),
     );
+    incrementCompletionCount();
     clearProjectInvariantWarning();
     return true;
   }
@@ -1696,6 +2401,9 @@ export function useBoardState() {
           if (task.columnId !== INBOX_COLUMN.id) {
             return false;
           }
+          if (task.status === TaskStatusEnum.Waiting) {
+            return false;
+          }
 
           const relatedItem = itemById.get(task.id);
           return relatedItem === undefined || !relatedItem.clarified;
@@ -1705,6 +2413,42 @@ export function useBoardState() {
           const secondCreatedAt = new Date(secondTask.createdAt).getTime();
 
           return secondCreatedAt - firstCreatedAt;
+        }),
+    [tasks, itemById],
+  );
+  const waitingInboxTasks = useMemo(
+    () =>
+      tasks
+        .filter((task) => {
+          if (task.columnId !== INBOX_COLUMN.id) {
+            return false;
+          }
+          if (task.status !== TaskStatusEnum.Waiting) {
+            return false;
+          }
+
+          const relatedItem = itemById.get(task.id);
+          return relatedItem === undefined || !relatedItem.clarified;
+        })
+        .sort((firstTask, secondTask) => {
+          const firstDeadline = new Date(firstTask.waitingDeadline ?? "").getTime();
+          const secondDeadline = new Date(secondTask.waitingDeadline ?? "").getTime();
+          const firstIsInvalid = Number.isNaN(firstDeadline);
+          const secondIsInvalid = Number.isNaN(secondDeadline);
+
+          if (firstIsInvalid && secondIsInvalid) {
+            return (
+              new Date(secondTask.createdAt).getTime() -
+              new Date(firstTask.createdAt).getTime()
+            );
+          }
+          if (firstIsInvalid) {
+            return 1;
+          }
+          if (secondIsInvalid) {
+            return -1;
+          }
+          return firstDeadline - secondDeadline;
         }),
     [tasks, itemById],
   );
@@ -1777,10 +2521,69 @@ export function useBoardState() {
     () => ({
       inboxUnclarified: inboxItems.length,
       projectsMissingActions: projectsWithoutNextAction.length,
-      waitingFollowUps: 0,
+      waitingFollowUps: waitingInboxTasks.length,
     }),
-    [inboxItems.length, projectsWithoutNextAction.length],
+    [inboxItems.length, projectsWithoutNextAction.length, waitingInboxTasks.length],
   );
+  const dashboardTaskStatusCounts = useMemo(() => {
+    const counts: Record<TaskStatus, number> = {
+      [TaskStatusEnum.Todo]: 0,
+      [TaskStatusEnum.InProgress]: 0,
+      [TaskStatusEnum.Waiting]: 0,
+      [TaskStatusEnum.Done]: 0,
+      [TaskStatusEnum.Obsolete]: 0,
+    };
+    for (const task of inboxTasks) {
+      counts[task.status] = (counts[task.status] ?? 0) + 1;
+    }
+    return counts;
+  }, [inboxTasks]);
+  const dashboardSummary = useMemo(
+    () => ({
+      inboxTasksTotal: inboxTasks.length,
+      inboxDoneTasks: dashboardTaskStatusCounts[TaskStatusEnum.Done],
+      inboxWaitingTasks: waitingInboxTasks.length,
+      nextActionsDone: nextActions.filter(
+        (nextAction) => nextAction.status === NextActionStatusEnum.Done,
+      ).length,
+      projectsDone: projects.filter(
+        (project) => project.status === ProjectStatusEnum.Done,
+      ).length,
+    }),
+    [
+      dashboardTaskStatusCounts,
+      inboxTasks.length,
+      nextActions,
+      projects,
+      waitingInboxTasks.length,
+    ],
+  );
+  const dashboardActivityByDate = useMemo(() => {
+    if (Object.keys(completionCountsByDate).length > 0) {
+      return completionCountsByDate;
+    }
+
+    const byDate: Record<string, number> = {};
+    const allCompletedAtValues = [
+      ...tasks
+        .filter((task) => task.status === TaskStatusEnum.Done)
+        .map((task) => task.completedAt)
+        .filter((completedAt): completedAt is string => !!completedAt),
+      ...nextActions
+        .filter((nextAction) => nextAction.status === NextActionStatusEnum.Done)
+        .map((nextAction) => nextAction.completedAt)
+        .filter((completedAt): completedAt is string => !!completedAt),
+      ...projects
+        .filter((project) => project.status === ProjectStatusEnum.Done)
+        .map((project) => project.completedAt)
+        .filter((completedAt): completedAt is string => !!completedAt),
+    ];
+    for (const completedAt of allCompletedAtValues) {
+      const dayKey = completedAt.slice(0, 10);
+      byDate[dayKey] = (byDate[dayKey] ?? 0) + 1;
+    }
+    return byDate;
+  }, [completionCountsByDate, nextActions, projects, tasks]);
   const isReviewCompleteBlocked =
     reviewCounters.inboxUnclarified > 0 ||
     reviewCounters.projectsMissingActions > 0;
@@ -1901,6 +2704,9 @@ export function useBoardState() {
     weeklyReviewStartedAt,
     weeklyReviewNote,
     reviewHistory,
+    completionCountsByDate,
+    dashboardLayout,
+    heatmapSensitivity,
     weeklyReviewError,
     clarifyTargetItemId,
     clarifyTargetItem,
@@ -1909,6 +2715,7 @@ export function useBoardState() {
     clarifyHistory,
     inboxItems,
     inboxTasks,
+    waitingInboxTasks,
     activeNextActions,
     visibleNextActions,
     contextActiveNextActionCounts,
@@ -1918,6 +2725,9 @@ export function useBoardState() {
     projectsWithoutNextAction,
     unboundActiveNextActions,
     reviewCounters,
+    dashboardSummary,
+    dashboardTaskStatusCounts,
+    dashboardActivityByDate,
     isReviewCompleteBlocked,
     activeWeeklyReviewSnapshot,
     lastCompletedReview,
@@ -1935,8 +2745,11 @@ export function useBoardState() {
     handleCaptureItem,
     handleAddColumn,
     handleSetTaskStatus,
+    handleUpdateTaskTitle,
     handleMoveTask,
     handleDeleteTask,
+    handleUnarchiveTask,
+    handleMoveSomedayItemToInbox,
     startClarify,
     cancelClarify,
     applyClarifyOutcome,
@@ -1946,7 +2759,9 @@ export function useBoardState() {
     createNextAction,
     bindNextActionToProject,
     unbindNextActionFromProject,
-    markNextActionDone,
+    setNextActionStatus,
+    updateNextAction,
+    deleteNextAction,
     setClarifyStep,
     updateClarifyDecision,
     startWeeklyReview,
@@ -1964,5 +2779,10 @@ export function useBoardState() {
     handleColumnDragOver,
     handleColumnDrop,
     handleColumnDragLeave,
+    moveDashboardWidget,
+    hideDashboardWidget,
+    showDashboardWidget,
+    resetDashboardLayout,
+    updateHeatmapSensitivity,
   };
 }

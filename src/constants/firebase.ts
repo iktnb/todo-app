@@ -11,6 +11,13 @@ export const CLOUD_SYNC_ENABLED = parseEnvBoolean(
   import.meta.env.VITE_CLOUD_SYNC_ENABLED,
 );
 
+const FIREBASE_USERS_COLLECTION_PRODUCTION = "users";
+const FIREBASE_USERS_COLLECTION_DEVELOPMENT = "users_dev";
+
+export const FIREBASE_USERS_COLLECTION = import.meta.env.DEV
+  ? FIREBASE_USERS_COLLECTION_DEVELOPMENT
+  : FIREBASE_USERS_COLLECTION_PRODUCTION;
+
 export const FIREBASE_DEVICE_ID_STORAGE_KEY = "flowanchor.firebase.device-id";
 
 export const FIREBASE_SYNC_DEBOUNCE_MS = 1200;

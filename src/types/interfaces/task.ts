@@ -8,4 +8,5 @@ export interface Task {
   waitingFor?: string;
   waitingDeadline?: string;
   createdAt: string;
+  completedAt?: string;
 }

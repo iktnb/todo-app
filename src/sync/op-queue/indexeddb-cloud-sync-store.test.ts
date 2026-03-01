@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { BoardStateSnapshot } from "../../types/interfaces/board-state-snapshot";
+import {
+  BoardDashboardWidgetTypeEnum,
+  HeatmapSensitivityEnum,
+} from "../../types/enums";
 import { createCloudSyncOperation } from "../op-protocol/create-cloud-sync-operation";
 import { IndexedDbCloudSyncStore } from "./indexeddb-cloud-sync-store";
 
 const baseSnapshot: BoardStateSnapshot = {
-  version: 5,
+  version: 8,
   columns: [],
   tasks: [],
   items: [],
@@ -19,6 +23,20 @@ const baseSnapshot: BoardStateSnapshot = {
   weeklyReviewStartedAt: null,
   weeklyReviewNote: "",
   reviewHistory: [],
+  completionCountsByDate: {},
+  uiPreferences: {
+    dashboardLayout: {
+      widgetOrder: [
+        BoardDashboardWidgetTypeEnum.TasksSummary,
+        BoardDashboardWidgetTypeEnum.TaskStatusBreakdown,
+        BoardDashboardWidgetTypeEnum.ActivityHeatmap,
+      ],
+      hiddenWidgets: [],
+    },
+    heatmapSettings: {
+      sensitivity: HeatmapSensitivityEnum.Balanced,
+    },
+  },
 };
 
 describe("IndexedDbCloudSyncStore", () => {

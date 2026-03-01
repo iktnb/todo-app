@@ -4,14 +4,20 @@ import type {
   NextAction,
   Project,
   ProjectHealth,
+  ProjectStatusFilter,
 } from "../../types/gtd";
 import {
-  NextActionStatusEnum,
   ProjectHealthEnum,
+  ProjectStatusFilterEnum,
   ProjectStatusEnum,
 } from "../../types/gtd";
-import { ProjectCard } from "./ProjectCard";
 import { useI18n } from "../../i18n/useI18n";
+import { ProjectCreateControls } from "./components/ProjectCreateControls";
+import { ProjectDetailSection } from "./components/ProjectDetailSection";
+import { ProjectFilters } from "./components/ProjectFilters";
+import { ProjectList } from "./components/ProjectList";
+import { ProjectMetrics } from "./components/ProjectMetrics";
+import { filterProjects } from "./utils/project-search";
 
 interface ProjectViewProps {
   projects: Project[];
@@ -57,6 +63,10 @@ export function ProjectView({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ProjectStatusFilter>(
+    ProjectStatusFilterEnum.All,
+  );
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null,
   );
@@ -103,6 +113,25 @@ export function ProjectView({
           null),
     [selectedProjectId, sortedProjects],
   );
+  const filteredProjects = useMemo(
+    () =>
+      filterProjects({
+        projects: sortedProjects,
+        statusFilter,
+        searchQuery,
+        contextsById,
+        projectHealthById,
+        projectActions,
+      }),
+    [
+      contextsById,
+      projectActions,
+      projectHealthById,
+      searchQuery,
+      sortedProjects,
+      statusFilter,
+    ],
+  );
 
   useEffect(() => {
     onProjectDetailOpenChange?.(selectedProjectId !== null);
@@ -136,76 +165,66 @@ export function ProjectView({
     return t("ds.project.status.done");
   }
 
+  function handleCreateCancel() {
+    setIsCreateOpen(false);
+    setCreateError(null);
+    setNewProjectTitle("");
+  }
+
   return (
-    <section className="mt-5 grid min-h-0 grid-rows-[auto_auto_1fr] gap-3 overflow-y-auto pr-1 max-md:pr-0">
+    <section className="mt-5 grid min-h-0 grid-rows-[auto_1fr] gap-3 overflow-y-auto pr-1 max-md:pr-0">
       {selectedProject === null ? (
         <header className="grid gap-2 rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="m-0 text-lg text-slate-100">
-              {t("project.view.title")}
-            </h2>
-            <div className="grid w-full gap-1 text-xs text-slate-300 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
-              <span>
-                {t("project.metrics.active", { count: activeProjectsCount })}
-              </span>
-              <span>
-                {t("project.metrics.done", { count: doneProjectsCount })}
-              </span>
-              <span>
-                {t("project.metrics.missing", {
-                  count: projectsWithoutNextActionCount,
-                })}
-              </span>
-              <span>
-                {t("project.metrics.allActions", { count: nextActions.length })}
-              </span>
-            </div>
-          </div>
-        </header>
-      ) : null}
-
-      <section className="grid gap-2 rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-3.5">
-        {!isCreateOpen ? (
-          <button
-            className="w-fit cursor-pointer rounded-[10px] border border-sky-400/55 bg-sky-400/15 px-3 py-2 text-sm font-semibold text-sky-200"
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-          >
-            {t("project.createButton")}
-          </button>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-            <input
-              className="w-full rounded-[10px] border border-slate-400/35 bg-slate-900/75 px-2.5 py-2 text-sm text-slate-200"
-              type="text"
-              placeholder={t("project.createPlaceholder")}
-              value={newProjectTitle}
-              onChange={(event) => setNewProjectTitle(event.target.value)}
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <ProjectFilters
+              searchQuery={searchQuery}
+              statusFilter={statusFilter}
+              onSearchQueryChange={setSearchQuery}
+              onStatusFilterChange={setStatusFilter}
             />
-            <button
-              className="cursor-pointer rounded-[10px] border border-emerald-400/55 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-200"
-              type="button"
-              onClick={handleCreateProject}
-            >
-              {t("project.create")}
-            </button>
-            <button
-              className="cursor-pointer rounded-[10px] border border-slate-400/45 bg-slate-700/40 px-3 py-2 text-xs text-slate-200"
-              type="button"
-              onClick={() => {
-                setIsCreateOpen(false);
-                setCreateError(null);
-                setNewProjectTitle("");
-              }}
-            >
-              {t("project.cancel")}
-            </button>
+            {!isCreateOpen ? (
+              <ProjectCreateControls
+                isCreateOpen={false}
+                newProjectTitle={newProjectTitle}
+                createError={null}
+                onCreateOpen={() => setIsCreateOpen(true)}
+                onCreateConfirm={handleCreateProject}
+                onCreateCancel={handleCreateCancel}
+                onNewProjectTitleChange={setNewProjectTitle}
+              />
+            ) : null}
           </div>
-        )}
-        {createError ? (
-          <p className="m-0 text-xs text-rose-300">{createError}</p>
-        ) : null}
-      </section>
+          <ProjectMetrics
+            activeProjectsCount={activeProjectsCount}
+            doneProjectsCount={doneProjectsCount}
+            projectsWithoutNextActionCount={projectsWithoutNextActionCount}
+            totalActionsCount={nextActions.length}
+          />
+          {isCreateOpen ? (
+            <ProjectCreateControls
+              isCreateOpen
+              newProjectTitle={newProjectTitle}
+              createError={createError}
+              onCreateOpen={() => setIsCreateOpen(true)}
+              onCreateConfirm={handleCreateProject}
+              onCreateCancel={handleCreateCancel}
+              onNewProjectTitleChange={setNewProjectTitle}
+            />
+          ) : null}
+        </header>
+      ) : (
+        <section className="grid gap-2 rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-3.5">
+          <ProjectCreateControls
+            isCreateOpen={isCreateOpen}
+            newProjectTitle={newProjectTitle}
+            createError={createError}
+            onCreateOpen={() => setIsCreateOpen(true)}
+            onCreateConfirm={handleCreateProject}
+            onCreateCancel={handleCreateCancel}
+            onNewProjectTitleChange={setNewProjectTitle}
+          />
+        </section>
+      )}
 
       <div className="grid min-h-0 content-start gap-3">
         {sortedProjects.length === 0 ? (
@@ -213,92 +232,38 @@ export function ProjectView({
             <p className="m-0 text-sm text-slate-300">{t("project.empty")}</p>
           </div>
         ) : selectedProject ? (
-          <div className="grid min-h-0 content-start gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(17,24,39,0.9),rgba(2,6,23,0.95))] p-3.5">
-              <div>
-                <h3 className="m-0 text-lg text-slate-100">
-                  {selectedProject.title}
-                </h3>
-                <p className="mt-1 mb-0 text-sm text-slate-300">
-                  {t("project.detail.description")}
+          <ProjectDetailSection
+            selectedProject={selectedProject}
+            projectHealthById={projectHealthById}
+            projectActions={projectActions}
+            unboundActiveNextActions={unboundActiveNextActions}
+            contextsById={contextsById}
+            contexts={contexts}
+            onBackToList={() => setSelectedProjectId(null)}
+            onUpdateProjectTitle={onUpdateProjectTitle}
+            onUpdateProjectStatus={onUpdateProjectStatus}
+            onQuickAddLinkedAction={onQuickAddLinkedAction}
+            onBindNextAction={onBindNextAction}
+            onUnbindNextAction={onUnbindNextAction}
+          />
+        ) : (
+          <>
+            {filteredProjects.length === 0 ? (
+              <div className="grid min-h-[120px] place-items-center rounded-2xl border border-slate-400/25 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] p-5 text-center">
+                <p className="m-0 text-sm text-slate-300">
+                  {t("project.search.empty")}
                 </p>
               </div>
-              <button
-                className="cursor-pointer rounded-[10px] border border-slate-400/45 bg-slate-700/40 px-3 py-2 text-sm text-slate-200"
-                type="button"
-                onClick={() => setSelectedProjectId(null)}
-              >
-                {t("project.backToList")}
-              </button>
-            </div>
-            <ProjectCard
-              project={selectedProject}
-              health={
-                projectHealthById[selectedProject.id] ??
-                ProjectHealthEnum.Healthy
-              }
-              linkedActions={projectActions(selectedProject.id)}
-              unboundActiveNextActions={unboundActiveNextActions}
-              contextsById={contextsById}
-              contexts={contexts}
-              onUpdateTitle={onUpdateProjectTitle}
-              onUpdateStatus={onUpdateProjectStatus}
-              onQuickAddLinkedAction={onQuickAddLinkedAction}
-              onBindNextAction={onBindNextAction}
-              onUnbindNextAction={onUnbindNextAction}
+            ) : null}
+            <ProjectList
+              projects={filteredProjects}
+              projectActions={projectActions}
+              projectHealthById={projectHealthById}
+              onSelectProject={setSelectedProjectId}
+              resolveStatusLabel={resolveStatusLabel}
+              resolveHealthLabel={resolveHealthLabel}
             />
-          </div>
-        ) : (
-          <div className="grid content-start gap-2.5">
-            {sortedProjects.map((project) => {
-              const linkedActions = projectActions(project.id);
-              const linkedDoneCount = linkedActions.filter(
-                (nextAction) => nextAction.status === NextActionStatusEnum.Done,
-              ).length;
-              const linkedActiveCount = linkedActions.filter(
-                (nextAction) =>
-                  nextAction.status === NextActionStatusEnum.Active,
-              ).length;
-              const projectHealth =
-                projectHealthById[project.id] ?? ProjectHealthEnum.Healthy;
-
-              return (
-                <button
-                  key={project.id}
-                  className="grid w-full cursor-pointer gap-2 rounded-xl border border-slate-400/35 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] p-3 text-left transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px hover:border-sky-400/45 hover:shadow-[0_0_18px_rgba(56,189,248,0.15)]"
-                  type="button"
-                  onClick={() => setSelectedProjectId(project.id)}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="m-0 text-base text-slate-100">
-                      {project.title}
-                    </h3>
-                    <span className="rounded-full border border-slate-400/40 bg-slate-900/75 px-2 py-0.5 text-xs font-semibold text-slate-200">
-                      {resolveStatusLabel(project.status)}
-                    </span>
-                  </div>
-                  <div className="grid gap-1 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
-                    <span>
-                      {t("project.stats.totalTasks", {
-                        count: linkedActions.length,
-                      })}
-                    </span>
-                    <span>
-                      {t("project.stats.completed", { count: linkedDoneCount })}
-                    </span>
-                    <span>
-                      {t("project.stats.active", { count: linkedActiveCount })}
-                    </span>
-                    <span>
-                      {t("project.stats.health", {
-                        health: resolveHealthLabel(projectHealth),
-                      })}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          </>
         )}
       </div>
     </section>
