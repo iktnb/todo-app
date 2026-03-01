@@ -16,6 +16,6 @@ jobs:
         uses: iktnb/github-utils/.github/actions/prepare-and-build-for-gh-pages@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          site_url: ${{ vars.SITE_URL }}
+          site_url: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
           output_path: "dist"
           build-command: "npm run build"
