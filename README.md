@@ -9,6 +9,17 @@ npm install
 npm run dev
 ```
 
+## Deploy to GitHub Pages
+
+Deployment is configured via GitHub Actions using shared action:
+
+- `iktnb/github-utils/.github/actions/prepare-and-build-for-gh-pages@v1`
+
+Trigger:
+
+- push to `main`
+- manual run via `workflow_dispatch`
+
 ## Local storage snapshot
 
 Board state is persisted in local storage under key:
