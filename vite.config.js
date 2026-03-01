@@ -14,11 +14,12 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       injectRegister: false,
-      includeAssets: ['vite.svg', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-512x512-maskable.png'],
+      includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-512x512-maskable.png'],
       manifest: {
-        name: 'IKTNB Todo',
-        short_name: 'IKTNB Todo',
-        description: 'Inbox-first GTD board that works fully offline after first load.',
+        name: 'FlowAnchor Todo',
+        short_name: 'FlowAnchor',
+        description:
+          'FlowAnchor Todo is a calm, offline-first GTD workspace for inbox capture, projects, and weekly review.',
         theme_color: '#0b0f19',
         background_color: '#0b0f19',
         display: 'standalone',

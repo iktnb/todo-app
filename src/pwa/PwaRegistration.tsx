@@ -17,7 +17,7 @@ export function PwaRegistration() {
       return
     }
 
-    console.info('IKTNB Todo is ready for offline usage')
+    console.info('FlowAnchor Todo is ready for offline usage')
   }, [offlineReady])
 
   useEffect(() => {

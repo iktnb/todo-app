@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "IKTNB Todo",
+  "productName": "FlowAnchor Todo",
   "version": "0.1.0",
-  "identifier": "com.iktnb.todo",
+  "identifier": "com.flowanchor.todo",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "IKTNB Todo",
+        "title": "FlowAnchor Todo",
         "width": 800,
         "height": 600,
         "resizable": true,

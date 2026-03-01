@@ -1,8 +1,8 @@
 import { BOARD_BACKUP_PREFIX } from '../constants/storage'
 import type { EncryptedBoardBackupPayload } from '../types/interfaces/encrypted-board-backup-payload'
 
-const BACKUP_SECRET = 'iktnb.board.backup.secret.v1'
-const BACKUP_SALT = 'iktnb.board.backup.salt.v1'
+const BACKUP_SECRET = 'flowanchor.board.backup.secret.v1'
+const BACKUP_SALT = 'flowanchor.board.backup.salt.v1'
 
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder()

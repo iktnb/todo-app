@@ -26,14 +26,14 @@ registerRoute(
     request.destination === 'style' ||
     request.destination === 'font',
   new StaleWhileRevalidate({
-    cacheName: 'iktnb-static-resources',
+    cacheName: 'flowanchor-static-resources',
   }),
 )
 
 registerRoute(
   ({ request }) => request.destination === 'image',
   new CacheFirst({
-    cacheName: 'iktnb-images',
+    cacheName: 'flowanchor-images',
     plugins: [
       new ExpirationPlugin({
         maxEntries: 100,

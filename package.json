@@ -1,7 +1,8 @@
 {
-  "name": "iktnb-todo",
+  "name": "flowanchor-todo",
   "private": true,
   "version": "0.0.0",
+  "description": "FlowAnchor Todo is a calm, offline-first GTD workspace.",
   "type": "module",
   "scripts": {
     "dev": "vite",

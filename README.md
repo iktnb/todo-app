@@ -1,6 +1,6 @@
-# IKTNB Todo
+# FlowAnchor Todo
 
-Simple Kanban-style board used as a foundation for incremental GTD evolution.
+Calm, offline-first GTD workspace for inbox capture, projects, and weekly review.
 
 ## Run locally
 
@@ -24,7 +24,7 @@ Trigger:
 
 Board state is persisted in local storage under key:
 
-- `iktnb.board.snapshot`
+- `flowanchor.board.snapshot`
 
 Snapshot format:
 
