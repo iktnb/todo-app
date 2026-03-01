@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent, FormEvent } from "react";
 import { INBOX_COLUMN } from "../constants/board";
 import { createDefaultContexts } from "../constants/contexts";
@@ -764,8 +764,8 @@ export function useBoardState() {
     null,
   );
 
-  function buildSnapshot(): BoardStateSnapshot {
-    return {
+  const boardSnapshot = useMemo<BoardStateSnapshot>(
+    () => ({
       version: BOARD_SNAPSHOT_VERSION,
       columns,
       tasks,
@@ -781,49 +781,61 @@ export function useBoardState() {
       weeklyReviewStartedAt,
       weeklyReviewNote,
       reviewHistory,
-    };
-  }
+    }),
+    [
+      columns,
+      tasks,
+      items,
+      nextActions,
+      projects,
+      somedayItems,
+      contexts,
+      selectedContextId,
+      legacyTaskIds,
+      isMigratedFromLegacy,
+      currentReviewStep,
+      weeklyReviewStartedAt,
+      weeklyReviewNote,
+      reviewHistory,
+    ],
+  );
+
+  const applyBoardSnapshot = useCallback(
+    (snapshot: BoardStateSnapshot) => {
+      try {
+        localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(snapshot));
+      } catch {
+        // Ignore write errors and still try to apply in-memory state.
+      }
+
+      const nextState = loadBoardStateFromStorage(defaultContexts);
+      setColumns(nextState.columns);
+      setTasks(nextState.tasks);
+      setItems(nextState.items);
+      setNextActions(nextState.nextActions);
+      setProjects(nextState.projects);
+      setSomedayItems(nextState.somedayItems);
+      setContexts(nextState.contexts);
+      setSelectedContextId(nextState.selectedContextId);
+      setLegacyTaskIds(nextState.legacyTaskIds);
+      setIsMigratedFromLegacy(nextState.isMigratedFromLegacy);
+      setCurrentReviewStep(nextState.currentReviewStep);
+      setWeeklyReviewStartedAt(nextState.weeklyReviewStartedAt);
+      setWeeklyReviewNote(nextState.weeklyReviewNote);
+      setReviewHistory(nextState.reviewHistory);
+      setWeeklyReviewError(null);
+      setProjectInvariantWarning(null);
+    },
+    [defaultContexts],
+  );
 
   useEffect(() => {
-    const snapshot: BoardStateSnapshot = {
-      version: BOARD_SNAPSHOT_VERSION,
-      columns,
-      tasks,
-      items,
-      nextActions,
-      projects,
-      somedayItems,
-      contexts,
-      selectedContextId,
-      legacyTaskIds,
-      isMigratedFromLegacy,
-      currentReviewStep,
-      weeklyReviewStartedAt,
-      weeklyReviewNote,
-      reviewHistory,
-    };
-
     try {
-      localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(snapshot));
+      localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(boardSnapshot));
     } catch {
       // Ignore write errors so board interactions remain responsive.
     }
-  }, [
-    columns,
-    tasks,
-    items,
-    nextActions,
-    projects,
-    somedayItems,
-    contexts,
-    selectedContextId,
-    legacyTaskIds,
-    isMigratedFromLegacy,
-    currentReviewStep,
-    weeklyReviewStartedAt,
-    weeklyReviewNote,
-    reviewHistory,
-  ]);
+  }, [boardSnapshot]);
 
   function clearProjectInvariantWarning() {
     setProjectInvariantWarning(null);
@@ -1047,7 +1059,7 @@ export function useBoardState() {
 
   async function handleCopyEncryptedBackup(): Promise<BackupActionResult> {
     try {
-      const encrypted = await encryptBackupPayload(buildSnapshot());
+      const encrypted = await encryptBackupPayload(boardSnapshot);
       await navigator.clipboard.writeText(encrypted);
       return {
         ok: true,
@@ -1883,6 +1895,7 @@ export function useBoardState() {
     contexts,
     selectedContextId,
     legacyTaskIds,
+    boardSnapshot,
     isMigratedFromLegacy,
     currentReviewStep,
     weeklyReviewStartedAt,
@@ -1945,6 +1958,7 @@ export function useBoardState() {
     handleResetLocalData,
     handleCopyEncryptedBackup,
     handleImportEncryptedBackup,
+    applyBoardSnapshot,
     handleDragStart,
     handleDragEnd,
     handleColumnDragOver,

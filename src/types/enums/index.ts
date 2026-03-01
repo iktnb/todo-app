@@ -16,3 +16,7 @@ export { ProjectStatus as ProjectStatusEnum } from "./project-status";
 export type { ProjectStatus } from "./project-status";
 export { ProjectHealth as ProjectHealthEnum } from "./project-health";
 export type { ProjectHealth } from "./project-health";
+export { CloudSyncStatus as CloudSyncStatusEnum } from "./cloud-sync-status";
+export type { CloudSyncStatus } from "./cloud-sync-status";
+export { CloudMergeStrategy as CloudMergeStrategyEnum } from "./cloud-merge-strategy";
+export type { CloudMergeStrategy } from "./cloud-merge-strategy";

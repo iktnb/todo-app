@@ -12,3 +12,5 @@ export type { WeeklyReviewSnapshot } from "./weekly-review-snapshot";
 export type { LegacyBoardStateSnapshot } from "./legacy-board-state-snapshot";
 export type { BoardStateSnapshot } from "./board-state-snapshot";
 export type { EncryptedBoardBackupPayload } from "./encrypted-board-backup-payload";
+export type { AuthUser } from "./auth/auth-user";
+export type { CloudBoardDocument } from "./sync/cloud-board-document";

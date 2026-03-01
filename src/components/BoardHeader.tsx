@@ -16,6 +16,13 @@ interface BoardHeaderProps {
   taskInput: string;
   setTaskInput: Dispatch<SetStateAction<string>>;
   onCaptureItem: (event: FormEvent<HTMLFormElement>) => void;
+  isAuthEnabled: boolean;
+  isAuthLoading: boolean;
+  authUserLabel: string | null;
+  authError: string | null;
+  onSignInWithGoogle: () => Promise<void>;
+  onSignOut: () => Promise<void>;
+  cloudSyncStatusLabel: string;
 }
 
 export function BoardHeader({
@@ -26,6 +33,13 @@ export function BoardHeader({
   taskInput,
   setTaskInput,
   onCaptureItem,
+  isAuthEnabled,
+  isAuthLoading,
+  authUserLabel,
+  authError,
+  onSignInWithGoogle,
+  onSignOut,
+  cloudSyncStatusLabel,
 }: BoardHeaderProps) {
   const { locale, setLocale, t } = useI18n();
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
@@ -207,6 +221,51 @@ export function BoardHeader({
               </div>
             </div>
             <div className="grid gap-2">
+              <div className="rounded-xl border border-slate-500/45 bg-slate-900/55 p-2.5">
+                <p className="m-0 text-xs text-slate-300">
+                  {t("header.auth.section")}
+                </p>
+                <p className="mt-1 mb-0 text-xs text-cyan-200/90">
+                  {cloudSyncStatusLabel}
+                </p>
+                {authUserLabel ? (
+                  <p className="mt-1 mb-0 text-xs text-slate-300">
+                    {t("header.auth.signedInAs", { user: authUserLabel })}
+                  </p>
+                ) : null}
+                {authError ? (
+                  <p className="mt-1 mb-0 text-xs text-rose-200/90">
+                    {t("header.auth.error")}
+                  </p>
+                ) : null}
+                <div className="mt-2 grid gap-2">
+                  {isAuthEnabled ? (
+                    authUserLabel ? (
+                      <button
+                        className="cursor-pointer rounded-[10px] border border-cyan-400/50 bg-cyan-400/12 px-3 py-2 text-sm font-semibold text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
+                        type="button"
+                        onClick={() => void onSignOut()}
+                        disabled={isAuthLoading}
+                      >
+                        {t("header.auth.signOut")}
+                      </button>
+                    ) : (
+                      <button
+                        className="cursor-pointer rounded-[10px] border border-cyan-400/50 bg-cyan-400/12 px-3 py-2 text-sm font-semibold text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
+                        type="button"
+                        onClick={() => void onSignInWithGoogle()}
+                        disabled={isAuthLoading}
+                      >
+                        {t("header.auth.signInGoogle")}
+                      </button>
+                    )
+                  ) : (
+                    <p className="m-0 text-xs text-slate-400">
+                      {t("header.auth.disabled")}
+                    </p>
+                  )}
+                </div>
+              </div>
               <button
                 className="cursor-pointer rounded-[10px] border border-cyan-400/50 bg-cyan-400/14 px-3 py-2 text-sm font-semibold text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.2)] transition-[transform,box-shadow,background-color,border-color] duration-200 ease-in-out hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-65"
                 type="button"

@@ -32,6 +32,19 @@ export const translations: Record<SupportedLocale, Record<string, string>> = {
     "header.locale.label": "Language",
     "header.locale.en": "EN",
     "header.locale.uk": "UK",
+    "header.auth.section": "Cloud account",
+    "header.auth.signInGoogle": "Sign in with Google",
+    "header.auth.signOut": "Sign out",
+    "header.auth.signedInAs": "Signed in as {{user}}",
+    "header.auth.disabled": "Cloud sync is disabled by feature flag.",
+    "header.auth.error": "Authentication error. Please try again.",
+    "header.sync.signedOut": "Sync status: signed out",
+    "header.sync.synced": "Sync status: synced",
+    "header.sync.syncing": "Sync status: syncing",
+    "header.sync.offline": "Sync status: offline",
+    "header.sync.error": "Sync status: error",
+    "header.sync.disabled": "Sync status: disabled",
+    "header.sync.needsAttention": "Sync status: choose merge strategy",
 
     "board.empty": "Empty",
     "board.filterByContextAria": "Filter next actions by context",
@@ -256,6 +269,12 @@ export const translations: Record<SupportedLocale, Record<string, string>> = {
     "state.backup.importSuccess": "Backup imported successfully.",
     "state.backup.decryptFail":
       "Unable to decrypt backup. Check backup string.",
+    "sync.merge.prompt":
+      "Cloud data differs from local data. Press OK to replace local data with cloud data. Press Cancel to merge local and cloud data.",
+    "sync.error.init": "Unable to initialize cloud sync.",
+    "sync.error.listen": "Cloud sync listener failed.",
+    "sync.error.push": "Unable to upload local changes to cloud.",
+    "sync.error.offline": "You are offline. Changes will sync when online.",
     "state.context.customDescription": "Custom context",
     "state.review.error.inbox":
       "Cannot complete review: Inbox still has unclarified items. Run Clarify first.",
@@ -306,6 +325,20 @@ export const translations: Record<SupportedLocale, Record<string, string>> = {
     "header.locale.label": "Мова",
     "header.locale.en": "EN",
     "header.locale.uk": "UK",
+    "header.auth.section": "Хмарний акаунт",
+    "header.auth.signInGoogle": "Увійти через Google",
+    "header.auth.signOut": "Вийти",
+    "header.auth.signedInAs": "Вхід виконано як {{user}}",
+    "header.auth.disabled": "Хмарну синхронізацію вимкнено через feature flag.",
+    "header.auth.error": "Помилка авторизації. Спробуйте ще раз.",
+    "header.sync.signedOut": "Стан синхронізації: не авторизовано",
+    "header.sync.synced": "Стан синхронізації: синхронізовано",
+    "header.sync.syncing": "Стан синхронізації: синхронізація",
+    "header.sync.offline": "Стан синхронізації: офлайн",
+    "header.sync.error": "Стан синхронізації: помилка",
+    "header.sync.disabled": "Стан синхронізації: вимкнено",
+    "header.sync.needsAttention":
+      "Стан синхронізації: оберіть стратегію злиття",
 
     "board.empty": "Порожньо",
     "board.filterByContextAria": "Фільтр наступних дій за контекстом",
@@ -536,6 +569,13 @@ export const translations: Record<SupportedLocale, Record<string, string>> = {
     "state.backup.importSuccess": "Резервну копію успішно імпортовано.",
     "state.backup.decryptFail":
       "Не вдалося розшифрувати резервну копію. Перевірте рядок резервної копії.",
+    "sync.merge.prompt":
+      "Хмарні дані відрізняються від локальних. Натисніть OK, щоб замінити локальні дані хмарними. Натисніть Скасувати, щоб об'єднати локальні й хмарні дані.",
+    "sync.error.init": "Не вдалося ініціалізувати хмарну синхронізацію.",
+    "sync.error.listen": "Помилка слухача хмарної синхронізації.",
+    "sync.error.push": "Не вдалося завантажити локальні зміни в хмару.",
+    "sync.error.offline":
+      "Ви офлайн. Зміни синхронізуються після відновлення мережі.",
     "state.context.customDescription": "Користувацький контекст",
     "state.review.error.inbox":
       "Не можна завершити огляд: у Вхідних є неуточнені елементи. Спочатку виконайте уточнення.",

@@ -9,6 +9,30 @@ npm install
 npm run dev
 ```
 
+### Cloud sync (Firebase + Google OAuth)
+
+1. Copy env template:
+
+```bash
+cp .env.example .env
+```
+
+2. Set Firebase values in `.env` and enable flag:
+
+```bash
+VITE_CLOUD_SYNC_ENABLED=true
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+```
+
+3. Deploy Firestore rules from `firestore.rules`.
+
+4. Run smoke checks from `docs/cloud-sync-smoke-checklist.md`.
+
 ## Mobile (Tauri Android / iOS)
 
 The app is already prepared for Tauri mobile entrypoint in Rust (`src-tauri/src/lib.rs`), so you can build native mobile binaries after one-time platform setup.

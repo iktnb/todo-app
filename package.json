@@ -27,6 +27,7 @@
   "dependencies": {
     "@fontsource/exo-2": "^5.2.8",
     "@fontsource/orbitron": "^5.2.8",
+    "firebase": "^12.10.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

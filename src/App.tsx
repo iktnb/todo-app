@@ -9,7 +9,10 @@ import { ProjectView } from "./features/projects/ProjectView";
 import { WeeklyReviewView } from "./features/review/WeeklyReviewView";
 import { INBOX_COLUMN } from "./constants/board";
 import { useBoardState } from "./hooks/useBoardState";
+import { useAuth } from "./hooks/useAuth";
+import { useCloudSync } from "./hooks/useCloudSync";
 import { useI18n } from "./i18n/useI18n";
+import { CloudSyncStatusEnum } from "./types/enums";
 import {
   ClarifyOutcomeEnum,
   NextActionStatusEnum,
@@ -21,8 +24,11 @@ type AppMode = "board" | "engage" | "projects" | "review" | "guide";
 
 function App() {
   const { t } = useI18n();
+  const { user, isLoading, error, isEnabled, signInWithGoogle, signOutUser } =
+    useAuth();
   const {
     legacyTaskIds,
+    boardSnapshot,
     inboxItems,
     inboxTasks,
     contexts,
@@ -80,12 +86,40 @@ function App() {
     handleResetLocalData,
     handleCopyEncryptedBackup,
     handleImportEncryptedBackup,
+    applyBoardSnapshot,
     handleDragStart,
     handleDragEnd,
     handleColumnDragOver,
     handleColumnDrop,
     handleColumnDragLeave,
   } = useBoardState();
+  const cloudSyncState = useCloudSync({
+    localSnapshot: boardSnapshot,
+    applySnapshot: applyBoardSnapshot,
+    user,
+    t,
+  });
+  const cloudSyncStatusLabel = useMemo(() => {
+    if (cloudSyncState.status === CloudSyncStatusEnum.Disabled) {
+      return t("header.sync.disabled");
+    }
+    if (cloudSyncState.status === CloudSyncStatusEnum.SignedOut) {
+      return t("header.sync.signedOut");
+    }
+    if (cloudSyncState.status === CloudSyncStatusEnum.Syncing) {
+      return t("header.sync.syncing");
+    }
+    if (cloudSyncState.status === CloudSyncStatusEnum.Offline) {
+      return t("header.sync.offline");
+    }
+    if (cloudSyncState.status === CloudSyncStatusEnum.Error) {
+      return t("header.sync.error");
+    }
+    if (cloudSyncState.status === CloudSyncStatusEnum.NeedsAttention) {
+      return t("header.sync.needsAttention");
+    }
+    return t("header.sync.synced");
+  }, [cloudSyncState.status, t]);
   const clarifyTriggerRef = useRef<HTMLElement | null>(null);
   const [appMode, setAppMode] = useState<AppMode>("board");
   const [isProjectDetailOpen, setIsProjectDetailOpen] = useState(false);
@@ -174,6 +208,13 @@ function App() {
         taskInput={taskInput}
         setTaskInput={setTaskInput}
         onCaptureItem={handleCaptureItem}
+        isAuthEnabled={isEnabled}
+        isAuthLoading={isLoading}
+        authUserLabel={user?.displayName ?? user?.email ?? null}
+        authError={error}
+        onSignInWithGoogle={signInWithGoogle}
+        onSignOut={signOutUser}
+        cloudSyncStatusLabel={cloudSyncState.message ?? cloudSyncStatusLabel}
       />
 
       {!(appMode === "projects" && isProjectDetailOpen) ? (
